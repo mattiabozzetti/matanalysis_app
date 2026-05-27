@@ -372,12 +372,13 @@ def score_ring(score: float) -> str:
 
 
 def render_result_table(table: pd.DataFrame) -> None:
-    html_out = """
-    <div class="sim-table">
-      <div class="sim-table-header">
-        <div>#</div><div>Player</div><div>Fit</div><div>Score</div>
-      </div>
-    """
+    html_out = (
+        '<div class="sim-table">'
+        '<div class="sim-table-header">'
+        '<div>#</div><div>Player</div><div>Fit</div><div>Score</div>'
+        '</div>'
+    )
+
     for _, row in table.iterrows():
         fit = row.get("Fit Index", np.nan)
         fit_txt = "—" if pd.isna(fit) else f"{float(fit):.0f}"
@@ -385,17 +386,18 @@ def render_result_table(table: pd.DataFrame) -> None:
             f"{fmt_intish(row.get('Age'))}, {txt(row.get('Position'))}, "
             f"{txt(row.get('Team'))} · {txt(row.get('League'))}"
         )
-        html_out += f"""
-        <div class="sim-row">
-          <div class="sim-rank">{int(row['Rank'])}</div>
-          <div class="sim-player">
-            <div class="sim-player-name">{html.escape(txt(row.get('Player')))}</div>
-            <div class="sim-player-meta">{html.escape(meta)}</div>
-          </div>
-          <div><span class="sim-fit-pill">{fit_txt}</span></div>
-          <div>{score_ring(row.get('Similarity', 0))}</div>
-        </div>
-        """
+        html_out += (
+            '<div class="sim-row">'
+            f'<div class="sim-rank">{int(row["Rank"])}</div>'
+            '<div class="sim-player">'
+            f'<div class="sim-player-name">{html.escape(txt(row.get("Player")))}</div>'
+            f'<div class="sim-player-meta">{html.escape(meta)}</div>'
+            '</div>'
+            f'<div><span class="sim-fit-pill">{fit_txt}</span></div>'
+            f'<div>{score_ring(row.get("Similarity", 0))}</div>'
+            '</div>'
+        )
+
     html_out += "</div>"
     st.markdown(html_out, unsafe_allow_html=True)
 
