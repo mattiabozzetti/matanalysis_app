@@ -208,7 +208,6 @@ def inject_css() -> None:
         }
         [data-baseweb="radio"] * {
             color: #DDE8FF !important;
-            background: transparent !important;
         }
         .stSlider [data-baseweb="slider"] > div > div {
             background: rgba(95,255,224,0.65) !important;
@@ -249,6 +248,54 @@ def inject_css() -> None:
             .hero-name-large {font-size: 2.3rem;}
             .hero-info-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
         }
+
+        /* RADIO FIX: keep the dark palette but make the selected dot visible */
+        input[type="radio"] {
+            accent-color: #5FFFE0 !important;
+        }
+        [data-testid="stSidebar"] [role="radiogroup"] label {
+            color: #DDE8FF !important;
+            opacity: 1 !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="radio"] {
+            color: #DDE8FF !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="radio"] div[role="radio"],
+        [data-testid="stSidebar"] [data-baseweb="radio"] > div:first-child {
+            border: 2px solid rgba(95,255,224,0.38) !important;
+            background: rgba(16, 22, 43, 0.95) !important;
+            box-shadow: inset 0 0 0 3px rgba(16,22,43,0.95), 0 0 0 1px rgba(95,255,224,0.08) !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="radio"] div[role="radio"][aria-checked="true"],
+        [data-testid="stSidebar"] [data-baseweb="radio"] input:checked ~ div:first-of-type,
+        [data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div {
+            border-color: #5FFFE0 !important;
+            background: radial-gradient(circle at center, #5FFFE0 0 42%, rgba(16,22,43,0.98) 46% 100%) !important;
+            box-shadow: 0 0 14px rgba(95,255,224,0.38) !important;
+        }
+
+        /* SLIDER FIX: remove Streamlit red accent and force the neon palette */
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] {
+            padding-top: 0.6rem !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div {
+            background: rgba(95,255,224,0.24) !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div > div {
+            background: linear-gradient(90deg, #5FFFE0, #7CFF8A) !important;
+        }
+        [data-testid="stSidebar"] .stSlider [role="slider"] {
+            width: 22px !important;
+            height: 22px !important;
+            background: #5FFFE0 !important;
+            border: 4px solid #10162B !important;
+            box-shadow: 0 0 0 2px rgba(95,255,224,0.80), 0 0 18px rgba(95,255,224,0.45) !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-testid="stThumbValue"] {
+            color: #5FFFE0 !important;
+            font-weight: 900 !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
