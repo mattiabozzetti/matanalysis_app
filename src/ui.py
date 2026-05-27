@@ -708,6 +708,8 @@ def inject_css() -> None:
             background: transparent !important;
         }
 
+        .export-note { color:#8EA2C6; font-size:0.75rem; }
+
         @media (max-width: 1100px) {
             .comparison-hero {
                 grid-template-columns: 1fr;

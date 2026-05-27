@@ -32,6 +32,7 @@ from src.scoring import (
     role_overall,
 )
 from src.ui import inject_css, pct_color
+from src.export_utils import render_export_png_button
 
 st.set_page_config(page_title="Player Comparison", page_icon="⚔️", layout="wide")
 inject_css()
@@ -415,15 +416,3 @@ if axes:
 else:
     st.info("Radar non definito per questo ruolo.")
 
-with st.expander("Reference group details"):
-    c1, c2 = st.columns(2)
-    if IS_GK:
-        cols_to_show = ["Player", "Team", "League", "Season", "Minutes played", "Nationality"]
-    else:
-        cols_to_show = ["Player", "Team", "League", "Season", "Position", "Minutes played", "Role bucket"]
-    with c1:
-        st.markdown("**Selected player reference**")
-        st.dataframe(sel_ref[cols_to_show].sort_values("Minutes played", ascending=False), use_container_width=True)
-    with c2:
-        st.markdown("**Comparison player reference**")
-        st.dataframe(cmp_ref[cols_to_show].sort_values("Minutes played", ascending=False), use_container_width=True)

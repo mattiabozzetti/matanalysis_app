@@ -17,6 +17,7 @@ from src.gk_scoring import (
     radar_axis_score,
 )
 from src.ui import inject_css, metric_row_html, pct_color, radar_figure
+from src.export_utils import render_export_png_button
 
 st.set_page_config(page_title="GK Card", page_icon="🧤", layout="wide")
 inject_css()
@@ -26,6 +27,13 @@ st.markdown(
     '<div class="fm-subtitle">Portieri · shot stopping · handling · distribuzione · radar in percentile</div>',
     unsafe_allow_html=True,
 )
+
+export_left, export_right = st.columns([5.5, 1.2])
+with export_left:
+    st.write("")
+with export_right:
+    render_export_png_button("gk_card")
+
 
 df = load_gk_enriched()
 
@@ -211,6 +219,3 @@ with r1:
 with r2:
     st.plotly_chart(radar_figure(labels, perf_values, "Performance · GK execution percentiles"), use_container_width=True)
 
-with st.expander("Reference group details"):
-    cols_to_show = ["Player", "Team", "League", "Season", "Minutes played", "Nationality"]
-    st.dataframe(reference_df[cols_to_show].sort_values("Minutes played", ascending=False), use_container_width=True)

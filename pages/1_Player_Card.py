@@ -17,6 +17,7 @@ from src.scoring import (
     role_overall,
 )
 from src.ui import inject_css, metric_row_html, pct_color, radar_figure
+from src.export_utils import render_export_png_button
 
 st.set_page_config(page_title="Player Card", page_icon="⚽", layout="wide")
 inject_css()
@@ -26,6 +27,13 @@ st.markdown(
     '<div class="fm-subtitle">Valori grezzi o possession-adjusted · barre e radar in percentile · overall pesato per ruolo</div>',
     unsafe_allow_html=True,
 )
+
+export_left, export_right = st.columns([5.5, 1.2])
+with export_left:
+    st.write("")
+with export_right:
+    render_export_png_button("player_card")
+
 
 df = load_players_enriched()
 
@@ -231,6 +239,3 @@ if axes:
 else:
     st.info("Radar non definito per questo ruolo.")
 
-with st.expander("Reference group details"):
-    cols_to_show = ["Player", "Team", "League", "Position", "Minutes played", "Role bucket"]
-    st.dataframe(reference_df[cols_to_show].sort_values("Minutes played", ascending=False), use_container_width=True)
