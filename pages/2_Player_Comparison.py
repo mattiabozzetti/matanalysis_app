@@ -265,8 +265,47 @@ if small_refs:
     st.warning("Reference group piccolo: " + " · ".join(small_refs) + ". I percentili potrebbero essere instabili.")
 
 
-# Server-side clean PNG export.
-# This avoids html2canvas/browser export issues where Streamlit text can be squashed or spacing can disappear.
+
+def _bar_width(pct: float) -> float:
+    if pd.isna(pct) or math.isnan(pct):
+        return 0
+    return max(0, min(100, float(pct)))
+
+
+def _pct_txt(pct: float) -> str:
+    return "—" if pd.isna(pct) or math.isnan(pct) else f"{pct:.0f}"
+
+
+def _score_txt(score: float) -> str:
+    return "—" if pd.isna(score) or math.isnan(score) else f"{score:.0f}"
+
+
+def comparison_metric_row(label: str, sel_value: str, sel_pct: float, cmp_value: str, cmp_pct: float) -> str:
+    sel_color = pct_color(sel_pct)
+    cmp_color = pct_color(cmp_pct)
+    return f"""
+    <div class="comparison-row">
+      <div class="comparison-value-left">{sel_value}</div>
+      <div class="comparison-pct-left" style="color:{sel_color};">{_pct_txt(sel_pct)}</div>
+      <div class="comparison-bar-left"><div class="comparison-fill-left" style="width:{_bar_width(sel_pct):.0f}%;background:{sel_color};color:{sel_color};"></div></div>
+      <div class="comparison-metric-label">{label}</div>
+      <div class="comparison-bar-right"><div class="comparison-fill-right" style="width:{_bar_width(cmp_pct):.0f}%;background:{cmp_color};color:{cmp_color};"></div></div>
+      <div class="comparison-pct-right" style="color:{cmp_color};">{_pct_txt(cmp_pct)}</div>
+      <div class="comparison-value-right">{cmp_value}</div>
+    </div>
+    """
+
+
+def _metric_vp(player_row: pd.Series, ref: pd.DataFrame, metric: dict, mode: str):
+    if IS_GK:
+        return gk_metric_value_and_percentile(player_row, ref, metric, mode)
+    return metric_value_and_percentile(player_row, df, ref, metric, mode)
+
+
+def _format_value(value: float, fmt: str) -> str:
+    return format_gk_metric_value(value, fmt) if IS_GK else format_metric_value(value, fmt)
+
+
 def _build_export_groups() -> list[dict]:
     export_groups: list[dict] = []
     for group_name, group in GROUPS.items():
@@ -321,46 +360,6 @@ with dl_right:
         mime="image/png",
         use_container_width=True,
     )
-
-
-def _bar_width(pct: float) -> float:
-    if pd.isna(pct) or math.isnan(pct):
-        return 0
-    return max(0, min(100, float(pct)))
-
-
-def _pct_txt(pct: float) -> str:
-    return "—" if pd.isna(pct) or math.isnan(pct) else f"{pct:.0f}"
-
-
-def _score_txt(score: float) -> str:
-    return "—" if pd.isna(score) or math.isnan(score) else f"{score:.0f}"
-
-
-def comparison_metric_row(label: str, sel_value: str, sel_pct: float, cmp_value: str, cmp_pct: float) -> str:
-    sel_color = pct_color(sel_pct)
-    cmp_color = pct_color(cmp_pct)
-    return f"""
-    <div class="comparison-row">
-      <div class="comparison-value-left">{sel_value}</div>
-      <div class="comparison-pct-left" style="color:{sel_color};">{_pct_txt(sel_pct)}</div>
-      <div class="comparison-bar-left"><div class="comparison-fill-left" style="width:{_bar_width(sel_pct):.0f}%;background:{sel_color};color:{sel_color};"></div></div>
-      <div class="comparison-metric-label">{label}</div>
-      <div class="comparison-bar-right"><div class="comparison-fill-right" style="width:{_bar_width(cmp_pct):.0f}%;background:{cmp_color};color:{cmp_color};"></div></div>
-      <div class="comparison-pct-right" style="color:{cmp_color};">{_pct_txt(cmp_pct)}</div>
-      <div class="comparison-value-right">{cmp_value}</div>
-    </div>
-    """
-
-
-def _metric_vp(player_row: pd.Series, ref: pd.DataFrame, metric: dict, mode: str):
-    if IS_GK:
-        return gk_metric_value_and_percentile(player_row, ref, metric, mode)
-    return metric_value_and_percentile(player_row, df, ref, metric, mode)
-
-
-def _format_value(value: float, fmt: str) -> str:
-    return format_gk_metric_value(value, fmt) if IS_GK else format_metric_value(value, fmt)
 
 
 st.markdown("### Metric families")
