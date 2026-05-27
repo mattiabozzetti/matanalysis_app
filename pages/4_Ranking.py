@@ -236,41 +236,42 @@ if len(reference_df) < 20:
 
 def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str = "#5FFFE0") -> None:
     safe_title = html.escape(title)
-    html_rows = f"""
-    <div class="ranking-panel" style="border-color:{color}38;">
-      <div class="ranking-panel-header">
-        <div class="ranking-panel-title" style="color:{color};">{safe_title}</div>
-        <div class="ranking-panel-context">Top 5</div>
-      </div>
-    """
+    panel_html = (
+        f'<div class="ranking-panel" style="border-color:{color}38;">'
+        f'<div class="ranking-panel-header">'
+        f'<div class="ranking-panel-title" style="color:{color};">{safe_title}</div>'
+        f'<div class="ranking-panel-context">Top 5</div>'
+        f'</div>'
+    )
 
     if table.empty:
-        html_rows += '<div class="ranking-empty">No data available for this metric.</div>'
+        panel_html += '<div class="ranking-empty">No data available for this metric.</div>'
     else:
         for _, row in table.head(5).iterrows():
             value = format_metric_value(row["_value"], fmt) if fmt != "overall" else f'{row["_value"]:.0f}'
             pct = row.get("_pct", np.nan)
             pct_txt = "—" if pd.isna(pct) or math.isnan(float(pct)) else f"{float(pct):.0f}"
-            pct_color = globals()["pct_color"](float(pct)) if not pd.isna(pct) else "#8EA2C6"
+            pct_col = pct_color(float(pct)) if not pd.isna(pct) else "#8EA2C6"
             meta = (
                 f"{fmt_intish(row.get('Age'))}, {safe_text(row.get('Position'))}, "
                 f"{safe_text(row.get('Team'))} · {safe_text(row.get('League'))}"
             )
-            html_rows += f"""
-            <div class="ranking-row">
-              <div class="ranking-rank">{int(row['Rank'])}</div>
-              <div class="ranking-player">
-                <div class="ranking-player-name">{html.escape(safe_text(row.get('Player')))}</div>
-                <div class="ranking-player-meta">{html.escape(meta)}</div>
-              </div>
-              <div class="ranking-value">
-                {html.escape(value)}
-                <div class="ranking-pct" style="color:{pct_color};">{pct_txt}</div>
-              </div>
-            </div>
-            """
-    html_rows += "</div>"
-    st.markdown(html_rows, unsafe_allow_html=True)
+            panel_html += (
+                '<div class="ranking-row">'
+                f'<div class="ranking-rank">{int(row["Rank"])}</div>'
+                '<div class="ranking-player">'
+                f'<div class="ranking-player-name">{html.escape(safe_text(row.get("Player")))}</div>'
+                f'<div class="ranking-player-meta">{html.escape(meta)}</div>'
+                '</div>'
+                '<div class="ranking-value">'
+                f'{html.escape(value)}'
+                f'<div class="ranking-pct" style="color:{pct_col};">{pct_txt}</div>'
+                '</div>'
+                '</div>'
+            )
+
+    panel_html += "</div>"
+    st.markdown(panel_html, unsafe_allow_html=True)
 
     if not table.empty:
         with st.expander(f"EXPAND · {title}"):
