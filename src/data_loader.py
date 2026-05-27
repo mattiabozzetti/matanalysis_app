@@ -5,8 +5,6 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from .preprocessing import merge_players_with_team_context
-
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
@@ -18,14 +16,29 @@ PLAYERS_PROCESSED = PROCESSED_DIR / "players_enriched.csv.gz"
 
 @st.cache_data(show_spinner="Carico i dati giocatori...")
 def load_players_enriched() -> pd.DataFrame:
-    """Load processed player data, with a raw Excel fallback.
+    """Load player data for the Streamlit app.
 
-    The app is designed for repository-based data loading. If the processed
-    file exists, it is used. If not, the raw Excel files are read and merged.
+    In the deployed app we expect the lightweight processed file to exist.
+    If it is missing locally, the function can still rebuild from raw Excel files
+    when ``src.preprocessing`` and the raw files are available.
     """
     if PLAYERS_PROCESSED.exists():
         df = pd.read_csv(PLAYERS_PROCESSED, compression="gzip", low_memory=False)
     else:
+        try:
+            from .preprocessing import merge_players_with_team_context
+        except ModuleNotFoundError as exc:
+            raise FileNotFoundError(
+                "Missing data/processed/players_enriched.csv.gz. "
+                "For deployment, commit the processed file. To rebuild locally, "
+                "restore src/preprocessing.py and the raw Excel files in data/raw/."
+            ) from exc
+
+        if not PLAYERS_RAW.exists() or not TEAMS_RAW.exists():
+            raise FileNotFoundError(
+                "Missing processed data and raw Excel fallback files. Expected either "
+                "data/processed/players_enriched.csv.gz or both raw Excel files in data/raw/."
+            )
         players = pd.read_excel(PLAYERS_RAW, sheet_name="Main statistics")
         teams = pd.read_excel(TEAMS_RAW, sheet_name="Main statistics")
         df = merge_players_with_team_context(players, teams)
@@ -37,12 +50,7 @@ def load_players_enriched() -> pd.DataFrame:
 
 
 def _coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
-    """Safely infer numeric columns without using errors="ignore".
-
-    pandas 3 removed ``errors="ignore"`` from ``pd.to_numeric``.
-    We therefore attempt conversion with ``errors="coerce"`` and keep the
-    original column when conversion would turn all non-empty values into NaN.
-    """
+    """Safely infer numeric columns without pandas' deprecated errors='ignore'."""
     df = df.copy()
     protected = {
         "Season",
@@ -102,8 +110,7 @@ def _add_role_bucket(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def available_seasons(df: pd.DataFrame) -> list[str]:
-    seasons = sorted(df["Season"].dropna().astype(str).unique().tolist(), reverse=True)
-    return seasons
+    return sorted(df["Season"].dropna().astype(str).unique().tolist(), reverse=True)
 
 
 def available_leagues(df: pd.DataFrame) -> list[str]:
