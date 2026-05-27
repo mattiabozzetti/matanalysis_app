@@ -5,6 +5,10 @@ import streamlit.components.v1 as components
 
 
 def render_export_png_button(filename_stem: str = "scouting_page") -> None:
+    """Render a client-side full-page PNG export button.
+
+    The button captures the parent Streamlit page, not only the visible viewport.
+    """
     safe_name = html.escape(filename_stem, quote=True)
     components.html(
         f"""
@@ -18,12 +22,28 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
             font-weight:800;
             font-size:14px;
             cursor:pointer;
-            box-shadow:0 0 0 rgba(0,0,0,0);
-          ">⬇ Export PNG</button>
+          ">⬇ Export full PNG</button>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+        <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
         <script>
         const btn = document.getElementById('export-btn');
+
+        function sleep(ms) {{
+          return new Promise(resolve => setTimeout(resolve, ms));
+        }}
+
+        function setHidden(el, hidden) {{
+          if (!el) return;
+          if (hidden) {{
+            el.dataset._oldVisibility = el.style.visibility || '';
+            el.style.visibility = 'hidden';
+          }} else {{
+            el.style.visibility = el.dataset._oldVisibility || '';
+            delete el.dataset._oldVisibility;
+          }}
+        }}
+
         btn.addEventListener('mouseenter', () => {{
           btn.style.borderColor = 'rgba(124,255,138,0.55)';
           btn.style.color = '#7CFF8A';
@@ -32,40 +52,101 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
           btn.style.borderColor = 'rgba(95,255,224,0.28)';
           btn.style.color = '#F6F7FB';
         }});
+
         btn.addEventListener('click', async () => {{
-          const parentDoc = window.parent.document;
-          const toolbar = parentDoc.querySelector('[data-testid="stToolbar"]');
-          const header = parentDoc.querySelector('[data-testid="stHeader"]');
-          const buttonText = btn.innerText;
-          btn.innerText = 'Preparing...';
+          const parentWindow = window.parent;
+          const doc = parentWindow.document;
+          const root = doc.documentElement;
+          const body = doc.body;
+          const target = doc.querySelector('[data-testid="stAppViewContainer"]') || body;
+
+          const previousScroll = parentWindow.scrollY || root.scrollTop || body.scrollTop || 0;
+          const oldButtonText = btn.innerText;
+          btn.innerText = 'Preparing full PNG...';
+
+          const hideSelectors = [
+            '[data-testid="stToolbar"]',
+            '[data-testid="stHeader"]',
+            '[data-testid="stDecoration"]',
+            '[data-testid="stStatusWidget"]',
+            'iframe[title="streamlit_component"]'
+          ];
+          const hiddenNodes = hideSelectors.flatMap(sel => Array.from(doc.querySelectorAll(sel)));
+
+          const oldRootOverflow = root.style.overflow;
+          const oldBodyOverflow = body.style.overflow;
+          const oldTargetOverflow = target.style.overflow;
+          const oldTargetHeight = target.style.height;
+          const oldTargetMinHeight = target.style.minHeight;
+
           try {{
-            if (toolbar) toolbar.style.visibility = 'hidden';
-            if (header) header.style.visibility = 'hidden';
-            const target = parentDoc.querySelector('[data-testid="stAppViewContainer"]') || parentDoc.body;
-            const canvas = await html2canvas(target, {{
-              backgroundColor: null,
-              useCORS: true,
-              allowTaint: true,
-              scale: 2,
-              scrollX: 0,
-              scrollY: -window.parent.scrollY,
-              windowWidth: Math.max(target.scrollWidth, target.clientWidth),
-              windowHeight: Math.max(target.scrollHeight, target.clientHeight),
-              ignoreElements: (el) => el.id === 'export-btn'
+            parentWindow.scrollTo(0, 0);
+            await sleep(250);
+
+            hiddenNodes.forEach(el => setHidden(el, true));
+
+            root.style.overflow = 'visible';
+            body.style.overflow = 'visible';
+            target.style.overflow = 'visible';
+
+            const fullWidth = Math.max(
+              body.scrollWidth, root.scrollWidth,
+              body.offsetWidth, root.offsetWidth,
+              body.clientWidth, root.clientWidth
+            );
+            const fullHeight = Math.max(
+              body.scrollHeight, root.scrollHeight,
+              body.offsetHeight, root.offsetHeight,
+              body.clientHeight, root.clientHeight
+            );
+
+            target.style.height = fullHeight + 'px';
+            target.style.minHeight = fullHeight + 'px';
+
+            await sleep(250);
+
+            const dataUrl = await htmlToImage.toPng(target, {{
+              backgroundColor: '#070A18',
+              cacheBust: true,
+              pixelRatio: 2,
+              width: fullWidth,
+              height: fullHeight,
+              canvasWidth: fullWidth * 2,
+              canvasHeight: fullHeight * 2,
+              style: {{
+                width: fullWidth + 'px',
+                height: fullHeight + 'px',
+                minHeight: fullHeight + 'px',
+                overflow: 'visible',
+                transform: 'none'
+              }},
+              filter: (node) => {{
+                if (!node || !node.tagName) return true;
+                const tag = node.tagName.toLowerCase();
+                if (tag === 'iframe') return false;
+                if (node.id === 'export-btn') return false;
+                return true;
+              }}
             }});
-            if (toolbar) toolbar.style.visibility = '';
-            if (header) header.style.visibility = '';
-            const link = parentDoc.createElement('a');
+
+            const link = doc.createElement('a');
             link.download = '{safe_name}.png';
-            link.href = canvas.toDataURL('image/png');
+            link.href = dataUrl;
+            doc.body.appendChild(link);
             link.click();
+            link.remove();
           }} catch (err) {{
-            if (toolbar) toolbar.style.visibility = '';
-            if (header) header.style.visibility = '';
             console.error(err);
-            alert('Unable to export PNG from the current page.');
+            alert('Export PNG non riuscito. Prova a ridurre lo zoom del browser o a esportare una pagina meno lunga.');
           }} finally {{
-            btn.innerText = buttonText;
+            hiddenNodes.forEach(el => setHidden(el, false));
+            root.style.overflow = oldRootOverflow;
+            body.style.overflow = oldBodyOverflow;
+            target.style.overflow = oldTargetOverflow;
+            target.style.height = oldTargetHeight;
+            target.style.minHeight = oldTargetMinHeight;
+            parentWindow.scrollTo(0, previousScroll);
+            btn.innerText = oldButtonText;
           }}
         }});
         </script>
