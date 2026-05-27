@@ -34,6 +34,31 @@ def inject_css() -> None:
             padding-top: 1.6rem;
             padding-bottom: 2rem;
         }
+        header[data-testid="stHeader"], .stApp > header {
+            background: linear-gradient(90deg, #050711 0%, #070A18 52%, #0A1024 100%) !important;
+            border-bottom: 1px solid rgba(95,255,224,0.12) !important;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.24) !important;
+        }
+        [data-testid="stToolbar"] {
+            background: transparent !important;
+            color: #F6F7FB !important;
+        }
+        [data-testid="stToolbar"] * {
+            color: #F6F7FB !important;
+            fill: #F6F7FB !important;
+        }
+        [data-testid="stDecoration"] {
+            display: none !important;
+        }
+        [data-testid="stStatusWidget"] {
+            background: rgba(7,10,24,0.88) !important;
+            color: #F6F7FB !important;
+            border: 1px solid rgba(95,255,224,0.18) !important;
+            border-radius: 999px !important;
+        }
+        iframe, [data-testid="stAppViewContainer"] {
+            background: #070A18 !important;
+        }
         section[data-testid="stSidebar"] {
             background: linear-gradient(180deg, rgba(7,10,24,0.98), rgba(15,20,40,0.98));
             border-right: 1px solid rgba(95,255,224,0.18);
@@ -179,9 +204,11 @@ def inject_css() -> None:
         [data-baseweb="radio"] > div:first-child {
             background-color: rgba(18,25,50,1) !important;
             border-color: rgba(95,255,224,0.35) !important;
+            box-shadow: 0 0 0 1px rgba(95,255,224,0.14) !important;
         }
-        [data-baseweb="radio"] input:checked + div {
-            background-color: #5FFFE0 !important;
+        [data-baseweb="radio"] * {
+            color: #DDE8FF !important;
+            background: transparent !important;
         }
         .stSlider [data-baseweb="slider"] > div > div {
             background: rgba(95,255,224,0.65) !important;
@@ -199,6 +226,18 @@ def inject_css() -> None:
             color:#F6F7FB !important;
             border: 1px solid rgba(95,255,224,0.22) !important;
         }
+
+        div[data-baseweb="popover"], div[data-baseweb="menu"] {
+            background: rgba(13,18,35,0.98) !important;
+            color: #F6F7FB !important;
+        }
+        div[data-baseweb="select"] svg {
+            fill: #AFC3E8 !important;
+        }
+        [data-testid="stSidebar"] hr {
+            border-color: rgba(95,255,224,0.12) !important;
+        }
+
         .stExpander {
             background: rgba(16, 22, 43, 0.55); border-radius: 16px; border:1px solid rgba(255,255,255,0.08);
         }
