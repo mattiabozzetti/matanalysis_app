@@ -62,9 +62,9 @@ with st.sidebar:
     default_role = player.get("Role bucket", "AM/W")
     role_keys = list(ROLE_BUCKETS.keys())
     default_role_index = role_keys.index(default_role) if default_role in role_keys else 0
-    compare_role = st.radio("Compare as role", role_keys, index=default_role_index, horizontal=True)
+    compare_role = st.selectbox("Compare as role", role_keys, index=default_role_index)
 
-    reference_scope = st.radio(
+    reference_scope = st.selectbox(
         "Reference scope",
         ["Player league", "Big Five", "All leagues", "Custom leagues"],
         index=0,
@@ -79,7 +79,7 @@ with st.sidebar:
         )
 
     min_minutes = st.slider("Minimum minutes in reference group", 0, 2500, 900, step=100)
-    mode = st.radio("Metric value", ["Raw", "Possession-adjusted"], index=0)
+    mode = st.selectbox("Metric value", ["Raw", "Possession-adjusted"], index=0)
 
 player_league = str(player.get("League")) if pd.notna(player.get("League")) else None
 reference_df = build_reference_df(

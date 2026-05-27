@@ -296,6 +296,41 @@ def inject_css() -> None:
             font-weight: 900 !important;
         }
 
+
+        /* CLEAN CONTROL OVERRIDES */
+        [data-testid="stSidebar"] .stRadio,
+        [data-testid="stSidebar"] [role="radiogroup"],
+        [data-testid="stSidebar"] [data-baseweb="radio"],
+        [data-testid="stSidebar"] [data-baseweb="radio"] *,
+        [data-testid="stSidebar"] input[type="radio"],
+        [data-testid="stSidebar"] input[type="radio"] + div,
+        [data-testid="stSidebar"] input[type="radio"] ~ div {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] label * {
+            color: #DDE8FF !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div,
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div > div {
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] .stSlider [role="slider"] {
+            background: #5FFFE0 !important;
+            border: 3px solid #10162B !important;
+            box-shadow: 0 0 0 2px rgba(95,255,224,0.75) !important;
+        }
+
+
+        [data-testid="stHeader"] {
+            background-color: #070A18 !important;
+        }
+        [data-testid="stHeader"]::before,
+        [data-testid="stHeader"]::after {
+            background: #070A18 !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
