@@ -95,28 +95,60 @@ reference_df = build_reference_df(
 scores = all_group_scores(player, reference_df, mode)
 overall = role_overall(scores, compare_role)
 
+
+def fmt_intish(value, suffix=""):
+    if pd.isna(value):
+        return "—"
+    try:
+        return f"{float(value):,.0f}{suffix}".replace(",", ".")
+    except Exception:
+        return f"{value}{suffix}"
+
+
+def fmt_text(value, fallback="—"):
+    if pd.isna(value):
+        return fallback
+    return str(value)
+
+
+role_label_map = {
+    "CB": "CENTRE BACK",
+    "FB": "FULL BACK",
+    "MF": "MIDFIELDER",
+    "AM/W": "ATT MID/WINGER",
+    "FW": "FORWARD",
+}
+
+nation = fmt_text(player.get("Nationality"))
+club = fmt_text(player.get("Team"))
+age = fmt_intish(player.get("Age"), " yrs")
+height = fmt_intish(player.get("Height"), " cm")
+minutes_txt = fmt_intish(player.get("Minutes played"))
+season_tag = fmt_text(player.get("Season"))
+player_pos = fmt_text(player.get("Position"))
+possession = player.get("Ball possession, %")
+possession_txt = "—" if pd.isna(possession) else f"{float(possession)*100:.1f}%"
+
 # Header
-left, right = st.columns([4.5, 1.15], vertical_alignment="center")
+left, right = st.columns([5, 1.15], vertical_alignment="center")
 with left:
-    meta = [
-        f"{player.get('Team', '—')}",
-        f"{player.get('League', '—')}",
-        f"{player.get('Season', '—')}",
-        f"Pos: {player.get('Position', '—')}",
-        f"Compare as: {compare_role}",
-        f"Min ref minutes: {min_minutes}",
-    ]
     st.markdown(
         f"""
-        <div class="hero-card">
-          <div class="hero-name">{player.get('Player', '—')}</div>
-          <div class="hero-meta">{' · '.join(meta)}</div>
-          <div style="margin-top:10px;">
-            <span class="pill">{mode}</span>
-            <span class="pill">Reference: {reference_scope}</span>
-            <span class="pill">Reference n = {len(reference_df)}</span>
-            <span class="pill">Team possession = {float(player.get('Ball possession, %'))*100:.1f}%</span>
+        <div class="hero-card hero-card-large">
+          <div class="hero-topline">
+            <span class="hero-tag">{role_label_map.get(compare_role, compare_role)}</span>
+            <span class="hero-tag hero-tag-alt">{season_tag}</span>
           </div>
+          <div class="hero-name hero-name-large">{fmt_text(player.get('Player'))}</div>
+          <div class="hero-meta hero-meta-upper">{club} · {fmt_text(player.get('League'))} · Posizione: {player_pos}</div>
+          <div class="hero-info-grid">
+            <div class="hero-info-box"><span class="hero-info-label">NATION</span><span class="hero-info-value">{nation}</span></div>
+            <div class="hero-info-box"><span class="hero-info-label">CLUB</span><span class="hero-info-value">{club}</span></div>
+            <div class="hero-info-box"><span class="hero-info-label">AGE</span><span class="hero-info-value">{age}</span></div>
+            <div class="hero-info-box"><span class="hero-info-label">HEIGHT</span><span class="hero-info-value">{height}</span></div>
+            <div class="hero-info-box"><span class="hero-info-label">MINUTES</span><span class="hero-info-value">{minutes_txt}</span></div>
+          </div>
+          <div class="hero-context-line">Percentile vs {compare_role} · {reference_scope} · reference n = {len(reference_df)} · {mode} · team possession = {possession_txt}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -141,32 +173,20 @@ if len(reference_df) < 20:
         "Abbassa i minuti minimi o amplia il perimetro campionati."
     )
 
-# Group score strip
-score_cols = st.columns(5)
-for i, (group_name, score) in enumerate(scores.items()):
-    if group_name not in CARD_GROUPS:
-        continue
-    with score_cols[i % 5]:
-        group_color = CARD_GROUPS[group_name].get("color", "#5FFFE0")
-        score_txt = "—" if math.isnan(score) else f"{score:.0f}"
-        st.markdown(
-            f"""
-            <div class="metric-panel" style="padding:12px 14px; min-height:92px; border-color:{group_color}44;">
-              <div class="small-note">{group_name}</div>
-              <div style="font-size:1.8rem;font-weight:900;color:{pct_color(score)};">{score_txt}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
 # Metric families
 st.markdown("### Metric families")
 cols = st.columns(2)
 for idx, (group_name, group) in enumerate(CARD_GROUPS.items()):
+    group_score = scores.get(group_name, np.nan)
+    group_score_txt = "—" if pd.isna(group_score) else f"{group_score:.0f}"
+    group_color = group.get("color", "#5FFFE0")
     html = f"""
     <div class="metric-panel">
-      <div class="metric-group-title" style="color:{group.get('color', '#5FFFE0')};">
-        <span>{group.get('icon', '•')}</span><span>{group_name}</span>
+      <div class="metric-group-header">
+        <div class="metric-group-title" style="color:{group_color};">
+          <span>{group.get('icon', '•')}</span><span>{group_name}</span>
+        </div>
+        <div class="group-score-badge" style="color:{pct_color(group_score)}; border-color:{group_color}55;">{group_score_txt}</div>
       </div>
     """
     for metric in group.get("metrics", []):

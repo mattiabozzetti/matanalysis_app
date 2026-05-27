@@ -30,12 +30,16 @@ def inject_css() -> None:
                         linear-gradient(135deg, #050711 0%, #070A18 45%, #0A1024 100%);
             color: var(--text);
         }
+        .block-container {
+            padding-top: 1.6rem;
+            padding-bottom: 2rem;
+        }
         section[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, rgba(7,10,24,0.96), rgba(15,20,40,0.96));
+            background: linear-gradient(180deg, rgba(7,10,24,0.98), rgba(15,20,40,0.98));
             border-right: 1px solid rgba(95,255,224,0.18);
         }
         .fm-title {
-            font-size: 2.2rem;
+            font-size: 2.25rem;
             font-weight: 900;
             letter-spacing: 0.04em;
             margin: 0 0 0.2rem 0;
@@ -53,12 +57,35 @@ def inject_css() -> None:
             border-radius: 26px;
             padding: 22px 24px;
             box-shadow: 0 18px 80px rgba(0,0,0,0.32), inset 0 0 26px rgba(95,255,224,0.04);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            min-height: 162px;
+        }
+        .hero-card-large {padding: 24px 28px 22px 28px;}
+        .hero-topline {display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap;}
+        .hero-tag {
+            display:inline-flex; align-items:center; padding:5px 10px; border-radius:4px;
+            background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.35);
+            color:#DCC8FF; font-size:0.76rem; font-weight:800; letter-spacing:0.07em;
+        }
+        .hero-tag-alt {
+            background: rgba(95,255,224,0.14); border: 1px solid rgba(95,255,224,0.30); color:#A8FFF0;
         }
         .hero-name {font-size: 2rem; font-weight: 900; margin-bottom: 4px;}
+        .hero-name-large {font-size: 3.1rem; line-height: 1; margin-bottom: 14px;}
         .hero-meta {color: var(--muted); font-size: 0.95rem;}
+        .hero-meta-upper {font-size: 1rem; margin-bottom: 14px;}
+        .hero-info-grid {
+            display:grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap:10px; max-width: 900px;
+        }
+        .hero-info-box {
+            background: rgba(18,25,50,0.82); border:1px solid rgba(95,255,224,0.16); border-radius: 4px;
+            padding:10px 14px; min-height:68px; display:flex; flex-direction:column; justify-content:center;
+        }
+        .hero-info-label {font-size:0.72rem; color:var(--muted); letter-spacing:0.08em; margin-bottom:5px;}
+        .hero-info-value {font-size:1.05rem; font-weight:800; color:#F6F7FB;}
+        .hero-context-line {margin-top: 14px; color:#B7CAE8; font-size:0.88rem; letter-spacing:0.04em; text-transform:uppercase;}
         .overall-badge {
-            width: 108px; height: 108px; border-radius: 999px;
+            width: 126px; height: 126px; border-radius: 999px;
             background: conic-gradient(from 180deg, #5FFFE0, #7CFF8A, #FFE66D, #5FFFE0);
             display: flex; align-items: center; justify-content: center;
             padding: 4px; margin-left: auto;
@@ -68,8 +95,8 @@ def inject_css() -> None:
             background: #0A1024; border-radius: 999px; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .overall-value {font-size: 2rem; font-weight: 900; line-height: 1;}
-        .overall-label {font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; margin-top: 4px;}
+        .overall-value {font-size: 2.4rem; font-weight: 900; line-height: 1;}
+        .overall-label {font-size: 0.72rem; color: var(--muted); letter-spacing: 0.08em; margin-top: 6px;}
         .metric-panel {
             background: var(--panel);
             border: 1px solid rgba(255,255,255,0.08);
@@ -78,13 +105,21 @@ def inject_css() -> None:
             margin-bottom: 16px;
             box-shadow: 0 14px 44px rgba(0,0,0,0.23);
         }
+        .metric-group-header {display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 11px;}
         .metric-group-title {
             font-size: 1.05rem;
             font-weight: 900;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            margin-bottom: 11px;
             display: flex; align-items: center; gap: 8px;
+            margin-bottom: 0;
+        }
+        .group-score-badge {
+            min-width: 38px; height: 30px; padding: 0 10px; border-radius: 999px;
+            display:inline-flex; align-items:center; justify-content:center;
+            background: rgba(95,255,224,0.10); border:1px solid rgba(95,255,224,0.22);
+            font-size: 0.95rem; font-weight: 900;
+            box-shadow: 0 0 14px rgba(95,255,224,0.08);
         }
         .metric-row {
             display: grid;
@@ -107,11 +142,73 @@ def inject_css() -> None:
             margin: 2px 4px 2px 0;
         }
         .small-note {color: var(--muted); font-size: 0.82rem;}
-        div[data-testid="stMetric"] {
-            background: rgba(16,22,43,0.70);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 18px;
-            padding: 12px;
+
+        /* WIDGETS */
+        .stSelectbox label, .stMultiSelect label, .stSlider label, .stRadio label {
+            color: #AFC3E8 !important; font-weight: 700 !important;
+        }
+        div[data-baseweb="select"] > div {
+            background: rgba(18,25,50,0.96) !important;
+            border: 1px solid rgba(95,255,224,0.20) !important;
+            border-radius: 14px !important;
+            color: #F6F7FB !important;
+            min-height: 46px !important;
+            box-shadow: none !important;
+        }
+        div[data-baseweb="select"] * {color:#F6F7FB !important;}
+        div[role="listbox"] {
+            background: rgba(13,18,35,0.98) !important;
+            color: #F6F7FB !important;
+            border: 1px solid rgba(95,255,224,0.20) !important;
+        }
+        div[role="option"] {background: transparent !important;}
+        div[role="option"]:hover {background: rgba(95,255,224,0.10) !important;}
+        [data-testid="stSidebar"] .stRadio > div {
+            background: transparent !important;
+        }
+        [data-testid="stSidebar"] .stRadio label {
+            background: transparent !important;
+            color: #DDE8FF !important;
+        }
+        [data-testid="stSidebar"] [role="radiogroup"] {
+            gap: 8px;
+        }
+        [data-testid="stSidebar"] [role="radiogroup"] label {
+            padding: 4px 0;
+        }
+        [data-baseweb="radio"] > div:first-child {
+            background-color: rgba(18,25,50,1) !important;
+            border-color: rgba(95,255,224,0.35) !important;
+        }
+        [data-baseweb="radio"] input:checked + div {
+            background-color: #5FFFE0 !important;
+        }
+        .stSlider [data-baseweb="slider"] > div > div {
+            background: rgba(95,255,224,0.65) !important;
+        }
+        .stSlider [role="slider"] {
+            background: #5FFFE0 !important;
+            border: 2px solid #0A1024 !important;
+            box-shadow: 0 0 0 2px rgba(95,255,224,0.25) !important;
+        }
+        .stSlider [data-testid="stTickBarMin"], .stSlider [data-testid="stTickBarMax"] {
+            color:#AFC3E8 !important;
+        }
+        button[kind="secondaryFormSubmit"], .stButton>button {
+            background: rgba(18,25,50,0.96) !important;
+            color:#F6F7FB !important;
+            border: 1px solid rgba(95,255,224,0.22) !important;
+        }
+        .stExpander {
+            background: rgba(16, 22, 43, 0.55); border-radius: 16px; border:1px solid rgba(255,255,255,0.08);
+        }
+
+        @media (max-width: 1200px) {
+            .hero-info-grid {grid-template-columns: repeat(3, minmax(0, 1fr));}
+        }
+        @media (max-width: 900px) {
+            .hero-name-large {font-size: 2.3rem;}
+            .hero-info-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
         }
         </style>
         """,
@@ -158,8 +255,9 @@ def radar_figure(labels: list[str], values: list[float], title: str) -> go.Figur
             r=closed_values,
             theta=closed_labels,
             fill="toself",
-            line=dict(width=3),
-            marker=dict(size=5),
+            line=dict(width=3, color="#5FFFE0"),
+            marker=dict(size=5, color="#5FFFE0"),
+            fillcolor="rgba(95,255,224,0.18)",
             hovertemplate="%{theta}: %{r:.0f}<extra></extra>",
         )
     )
