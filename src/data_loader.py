@@ -37,6 +37,12 @@ def load_players_enriched() -> pd.DataFrame:
 
 
 def _coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    """Safely infer numeric columns without using errors="ignore".
+
+    pandas 3 removed ``errors="ignore"`` from ``pd.to_numeric``.
+    We therefore attempt conversion with ``errors="coerce"`` and keep the
+    original column when conversion would turn all non-empty values into NaN.
+    """
     df = df.copy()
     protected = {
         "Season",
@@ -52,9 +58,21 @@ def _coerce_numeric(df: pd.DataFrame) -> pd.DataFrame:
         "_team_merge_direct",
         "_team_merge_fallback",
     }
+
     for col in df.columns:
-        if col not in protected:
-            df[col] = pd.to_numeric(df[col], errors="ignore")
+        if col in protected:
+            continue
+
+        original = df[col]
+        converted = pd.to_numeric(original, errors="coerce")
+
+        non_missing_original = original.notna().sum()
+        non_missing_converted = converted.notna().sum()
+
+        # Convert if at least one value is numeric, or if the column was empty anyway.
+        if non_missing_converted > 0 or non_missing_original == 0:
+            df[col] = converted
+
     return df
 
 
