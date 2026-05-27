@@ -5,9 +5,10 @@ import streamlit.components.v1 as components
 
 
 def render_export_png_button(filename_stem: str = "scouting_page") -> None:
-    """Render a client-side full-page PNG export button.
+    """Render a client-side PNG export button.
 
-    This version expands Streamlit's internal scroll containers before capture.
+    It tries to capture the full Streamlit app canvas. For long pages, browser security
+    and Streamlit's internal scroll containers may still limit the capture in some cases.
     """
     safe_name = html.escape(filename_stem, quote=True)
     components.html(
@@ -22,7 +23,7 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
             font-weight:800;
             font-size:14px;
             cursor:pointer;
-          ">⬇ Export full PNG</button>
+          ">⬇ Export PNG</button>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -45,7 +46,6 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
             maxHeight: el.style.maxHeight,
             overflow: el.style.overflow,
             overflowY: el.style.overflowY,
-            position: el.style.position,
             visibility: el.style.visibility
           }};
         }}
@@ -56,40 +56,7 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
           saved.el.style.maxHeight = saved.maxHeight;
           saved.el.style.overflow = saved.overflow;
           saved.el.style.overflowY = saved.overflowY;
-          saved.el.style.position = saved.position;
           saved.el.style.visibility = saved.visibility;
-        }}
-
-        function pageDimensions(doc) {{
-          const root = doc.documentElement;
-          const body = doc.body;
-          const nodes = [
-            root,
-            body,
-            doc.querySelector(".stApp"),
-            doc.querySelector("[data-testid='stAppViewContainer']"),
-            doc.querySelector("[data-testid='stMain']"),
-            doc.querySelector("section.main"),
-            doc.querySelector(".block-container")
-          ].filter(Boolean);
-
-          const width = Math.ceil(Math.max(
-            root.scrollWidth, body.scrollWidth,
-            root.offsetWidth, body.offsetWidth,
-            root.clientWidth, body.clientWidth,
-            ...nodes.map(n => n.scrollWidth || 0),
-            ...nodes.map(n => n.offsetWidth || 0)
-          ));
-
-          const height = Math.ceil(Math.max(
-            root.scrollHeight, body.scrollHeight,
-            root.offsetHeight, body.offsetHeight,
-            root.clientHeight, body.clientHeight,
-            ...nodes.map(n => n.scrollHeight || 0),
-            ...nodes.map(n => n.offsetHeight || 0)
-          ));
-
-          return {{width, height}};
         }}
 
         btn.addEventListener("mouseenter", () => {{
@@ -106,11 +73,14 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
           const doc = parentWindow.document;
           const root = doc.documentElement;
           const body = doc.body;
-          const target = doc.querySelector(".stApp") || doc.querySelector("[data-testid='stAppViewContainer']") || body;
+          const target =
+            doc.querySelector(".stApp") ||
+            doc.querySelector("[data-testid='stAppViewContainer']") ||
+            body;
 
           const oldText = btn.innerText;
           const oldScrollY = parentWindow.scrollY || root.scrollTop || body.scrollTop || 0;
-          btn.innerText = "Preparing full PNG...";
+          btn.innerText = "Preparing PNG...";
 
           const expandSelectors = [
             "html",
@@ -136,29 +106,34 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
 
           try {{
             parentWindow.scrollTo(0, 0);
-            await sleep(300);
+            await sleep(250);
 
-            let dims = pageDimensions(doc);
-            const fullWidth = dims.width;
-            const fullHeight = dims.height;
+            const fullWidth = Math.ceil(Math.max(
+              root.scrollWidth, body.scrollWidth, root.offsetWidth, body.offsetWidth,
+              root.clientWidth, body.clientWidth,
+              ...expandedNodes.map(n => n.scrollWidth || 0),
+              ...expandedNodes.map(n => n.offsetWidth || 0)
+            ));
+
+            const fullHeight = Math.ceil(Math.max(
+              root.scrollHeight, body.scrollHeight, root.offsetHeight, body.offsetHeight,
+              root.clientHeight, body.clientHeight,
+              ...expandedNodes.map(n => n.scrollHeight || 0),
+              ...expandedNodes.map(n => n.offsetHeight || 0)
+            ));
 
             expandedNodes.forEach(el => {{
               el.style.maxHeight = "none";
               el.style.overflow = "visible";
               el.style.overflowY = "visible";
               el.style.minHeight = fullHeight + "px";
-              el.style.height = fullHeight + "px";
             }});
 
             hiddenNodes.forEach(el => {{
               el.style.visibility = "hidden";
             }});
 
-            await sleep(450);
-
-            dims = pageDimensions(doc);
-            const captureWidth = Math.max(fullWidth, dims.width);
-            const captureHeight = Math.max(fullHeight, dims.height);
+            await sleep(300);
 
             const canvas = await html2canvas(target, {{
               backgroundColor: "#070A18",
@@ -170,45 +145,10 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
               y: 0,
               scrollX: 0,
               scrollY: 0,
-              width: captureWidth,
-              height: captureHeight,
-              windowWidth: captureWidth,
-              windowHeight: captureHeight,
-              onclone: (clonedDoc) => {{
-                const clonedRoot = clonedDoc.documentElement;
-                const clonedBody = clonedDoc.body;
-                [clonedRoot, clonedBody].forEach(el => {{
-                  el.style.width = captureWidth + "px";
-                  el.style.height = captureHeight + "px";
-                  el.style.minHeight = captureHeight + "px";
-                  el.style.maxHeight = "none";
-                  el.style.overflow = "visible";
-                  el.style.background = "#070A18";
-                }});
-                [
-                  "[data-testid='stToolbar']",
-                  "[data-testid='stHeader']",
-                  "[data-testid='stDecoration']",
-                  "[data-testid='stStatusWidget']",
-                  "iframe[title='streamlit_component']"
-                ].forEach(sel => {{
-                  clonedDoc.querySelectorAll(sel).forEach(el => el.style.visibility = "hidden");
-                }});
-                [
-                  ".stApp",
-                  "[data-testid='stAppViewContainer']",
-                  "[data-testid='stMain']",
-                  "section.main",
-                  ".block-container"
-                ].forEach(sel => {{
-                  clonedDoc.querySelectorAll(sel).forEach(el => {{
-                    el.style.height = captureHeight + "px";
-                    el.style.minHeight = captureHeight + "px";
-                    el.style.maxHeight = "none";
-                    el.style.overflow = "visible";
-                  }});
-                }});
-              }}
+              width: fullWidth,
+              height: fullHeight,
+              windowWidth: fullWidth,
+              windowHeight: fullHeight
             }});
 
             const link = doc.createElement("a");
@@ -217,13 +157,9 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
             doc.body.appendChild(link);
             link.click();
             link.remove();
-
-            if (canvas.height <= parentWindow.innerHeight * 2.25) {{
-              console.warn("PNG export height is close to viewport height; Streamlit may be virtualizing/cropping the page.");
-            }}
           }} catch (err) {{
             console.error(err);
-            alert("Export PNG non riuscito. Se continua, passiamo a un export server-side generato da Python.");
+            alert("Export PNG non riuscito. Prova con zoom browser più basso oppure una pagina meno lunga.");
           }} finally {{
             saved.forEach(restoreStyle);
             parentWindow.scrollTo(0, oldScrollY);
