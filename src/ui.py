@@ -722,163 +722,55 @@ def inject_css() -> None:
         }
 
 
-        /* RANKING PAGE */
-        .ranking-control-title {
-            color: #AFC3E8;
-            font-size: 0.82rem;
-            font-weight: 900;
-            letter-spacing: 0.10em;
-            text-transform: uppercase;
-            margin: 0.8rem 0 0.45rem 0;
+        /* MULTISELECT TAG FIX */
+        [data-baseweb="tag"] {
+            background: rgba(95,255,224,0.18) !important;
+            color: #5FFFE0 !important;
+            border: 1px solid rgba(95,255,224,0.35) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 0 16px rgba(95,255,224,0.12) !important;
         }
-        .ranking-hero {
-            margin: 1.2rem 0 1.4rem 0;
-            padding: 26px 28px;
-            border: 1px solid rgba(95,255,224,0.18);
-            border-radius: 24px;
-            background: radial-gradient(circle at top left, rgba(95,255,224,0.11), transparent 35%),
-                        linear-gradient(110deg, rgba(16,22,43,0.86), rgba(33,21,60,0.68));
-            box-shadow: 0 18px 62px rgba(0,0,0,0.30), inset 0 0 26px rgba(95,255,224,0.04);
+        [data-baseweb="tag"] span,
+        [data-baseweb="tag"] div,
+        [data-baseweb="tag"] svg {
+            color: #5FFFE0 !important;
+            fill: #5FFFE0 !important;
         }
-        .ranking-kicker {
-            color: #AFC3E8;
-            font-size: 0.86rem;
-            font-weight: 900;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            margin-bottom: 8px;
+        [data-baseweb="tag"] svg path {
+            fill: #5FFFE0 !important;
         }
-        .ranking-title {
-            color: #F8FBFF;
-            font-size: 3rem;
-            line-height: 1.0;
-            font-weight: 950;
-            letter-spacing: -0.03em;
-            text-shadow: 0 0 18px rgba(95,255,224,0.18);
-            margin-bottom: 10px;
+        [data-baseweb="tag"]:hover {
+            background: rgba(124,255,138,0.18) !important;
+            border-color: rgba(124,255,138,0.45) !important;
         }
-        .ranking-subtitle {
-            color: #B7CAE8;
-            font-size: 1rem;
-            font-weight: 650;
+        body ul[role="listbox"],
+        body div[role="listbox"],
+        body [data-baseweb="menu"] {
+            background: #0B1024 !important;
+            border: 1px solid rgba(95,255,224,0.30) !important;
         }
-        .ranking-pill-row {
-            margin-top: 14px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+        body li[role="option"],
+        body div[role="option"] {
+            background: #0B1024 !important;
+            color: #F6F7FB !important;
         }
-        .ranking-pill {
-            display: inline-flex;
-            align-items: center;
-            min-height: 28px;
-            padding: 5px 10px;
-            border-radius: 999px;
-            background: rgba(95,255,224,0.10);
-            color: #BFFFF4;
-            border: 1px solid rgba(95,255,224,0.20);
-            font-size: 0.74rem;
-            font-weight: 850;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
+        body li[role="option"] *,
+        body div[role="option"] * {
+            background: transparent !important;
+            color: #F6F7FB !important;
         }
-        .ranking-panel {
-            background: rgba(16, 22, 43, 0.84);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 22px;
-            padding: 16px 16px 10px 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 14px 44px rgba(0,0,0,0.23);
+        body li[role="option"]:hover,
+        body div[role="option"]:hover,
+        body li[role="option"][aria-selected="true"],
+        body div[role="option"][aria-selected="true"] {
+            background: #111A33 !important;
+            color: #5FFFE0 !important;
         }
-        .ranking-panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding-bottom: 10px;
-            margin-bottom: 6px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .ranking-panel-title {
-            color: #5FFFE0;
-            font-size: 1.00rem;
-            font-weight: 950;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-        .ranking-panel-context {
-            color: #8EA2C6;
-            font-size: 0.74rem;
-            font-weight: 800;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-        .ranking-row {
-            display: grid;
-            grid-template-columns: 38px minmax(0, 1fr) 70px;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.055);
-        }
-        .ranking-row:last-child {border-bottom: 0;}
-        .ranking-rank {
-            color: #B7CAE8;
-            font-size: 0.95rem;
-            font-weight: 950;
-            text-align: center;
-        }
-        .ranking-player {
-            min-width: 0;
-        }
-        .ranking-player-name {
-            color: #F6F7FB;
-            font-size: 1.00rem;
-            font-weight: 950;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .ranking-player-meta {
-            color: #8EA2C6;
-            font-size: 0.78rem;
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-top: 2px;
-        }
-        .ranking-value {
-            color: #F6F7FB;
-            font-size: 1.00rem;
-            font-weight: 950;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-        .ranking-pct {
-            display: inline-flex;
-            margin-top: 4px;
-            min-width: 34px;
-            height: 22px;
-            border-radius: 999px;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.74rem;
-            font-weight: 950;
-            background: rgba(95,255,224,0.10);
-            border: 1px solid rgba(95,255,224,0.22);
-        }
-        .ranking-expand-label {
-            color: #AFC3E8;
-            font-size: 0.82rem;
-            font-weight: 900;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-        .ranking-empty {
-            color: #8EA2C6;
-            font-size: 0.92rem;
-            padding: 12px 0;
+        body li[role="option"]:hover *,
+        body div[role="option"]:hover *,
+        body li[role="option"][aria-selected="true"] *,
+        body div[role="option"][aria-selected="true"] * {
+            color: #5FFFE0 !important;
         }
 
         </style>
