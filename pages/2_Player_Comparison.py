@@ -32,18 +32,10 @@ from src.scoring import (
     role_overall,
 )
 from src.ui import inject_css, pct_color
-from src.export_utils import render_export_png_button
+from src.comparison_png_export import create_comparison_png
 
 st.set_page_config(page_title="Player Comparison", page_icon="⚔️", layout="wide")
 inject_css()
-
-# Export button
-export_left, export_right = st.columns([5.5, 1.2])
-with export_left:
-    st.write("")
-with export_right:
-    render_export_png_button("player_comparison")
-
 
 st.markdown('<div class="fm-title">PLAYER COMPARISON</div>', unsafe_allow_html=True)
 st.markdown(
@@ -271,6 +263,64 @@ if len(cmp_ref) < 20:
     small_refs.append(f"comparison reference n={len(cmp_ref)}")
 if small_refs:
     st.warning("Reference group piccolo: " + " · ".join(small_refs) + ". I percentili potrebbero essere instabili.")
+
+
+# Server-side clean PNG export.
+# This avoids html2canvas/browser export issues where Streamlit text can be squashed or spacing can disappear.
+def _build_export_groups() -> list[dict]:
+    export_groups: list[dict] = []
+    for group_name, group in GROUPS.items():
+        rows = []
+        for metric in group.get("metrics", []):
+            sel_value, sel_pct = _metric_vp(selected_player, sel_ref, metric, mode)
+            cmp_value, cmp_pct = _metric_vp(comparison_player, cmp_ref, metric, mode)
+            rows.append(
+                {
+                    "label": metric.get("label", metric.get("column", "Metric")),
+                    "sel_value": _format_value(sel_value, metric.get("fmt", "0.00")),
+                    "sel_pct": sel_pct,
+                    "cmp_value": _format_value(cmp_value, metric.get("fmt", "0.00")),
+                    "cmp_pct": cmp_pct,
+                }
+            )
+        export_groups.append(
+            {
+                "name": group_name,
+                "icon": group.get("icon", "•"),
+                "color": group.get("color", "#5FFFE0"),
+                "sel_score": sel_scores.get(group_name, float("nan")),
+                "cmp_score": cmp_scores.get(group_name, float("nan")),
+                "rows": rows,
+            }
+        )
+    return export_groups
+
+
+export_png = create_comparison_png(
+    selected_player=selected_player,
+    comparison_player=comparison_player,
+    selected_overall=sel_overall,
+    comparison_overall=cmp_overall,
+    compare_role=compare_role,
+    reference_scope=reference_scope,
+    mode=mode,
+    min_minutes=min_minutes,
+    is_gk=IS_GK,
+    groups=_build_export_groups(),
+)
+export_filename = f"comparison_{_fmt_text(selected_player.get('Player')).replace(' ', '_')}_vs_{_fmt_text(comparison_player.get('Player')).replace(' ', '_')}.png"
+
+dl_left, dl_right = st.columns([5.5, 1.35])
+with dl_left:
+    st.write("")
+with dl_right:
+    st.download_button(
+        "⬇ Export clean PNG",
+        data=export_png,
+        file_name=export_filename,
+        mime="image/png",
+        use_container_width=True,
+    )
 
 
 def _bar_width(pct: float) -> float:
