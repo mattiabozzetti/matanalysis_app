@@ -331,6 +331,90 @@ def inject_css() -> None:
             background: #070A18 !important;
         }
 
+
+        /* FIX 5: Streamlit/BaseWeb dropdown menu and slider cleanup */
+        body div[data-baseweb="popover"],
+        body div[data-baseweb="popover"] > div,
+        body div[data-baseweb="menu"],
+        body ul[role="listbox"],
+        body div[role="listbox"] {
+            background: #0B1024 !important;
+            color: #F6F7FB !important;
+            border: 1px solid rgba(95,255,224,0.28) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 18px 54px rgba(0,0,0,0.55), 0 0 24px rgba(95,255,224,0.10) !important;
+            overflow: hidden !important;
+        }
+        body li[role="option"],
+        body div[role="option"] {
+            background: #0B1024 !important;
+            color: #F6F7FB !important;
+            border-radius: 8px !important;
+        }
+        body li[role="option"] *,
+        body div[role="option"] * {
+            color: #F6F7FB !important;
+            background: transparent !important;
+        }
+        body li[role="option"]:hover,
+        body div[role="option"]:hover,
+        body li[role="option"][aria-selected="true"],
+        body div[role="option"][aria-selected="true"] {
+            background: rgba(95,255,224,0.16) !important;
+            color: #5FFFE0 !important;
+        }
+        body li[role="option"]:hover *,
+        body div[role="option"]:hover *,
+        body li[role="option"][aria-selected="true"] *,
+        body div[role="option"][aria-selected="true"] * {
+            color: #5FFFE0 !important;
+        }
+
+        /* Select closed state */
+        [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+            background: #10162B !important;
+            border: 1px solid rgba(95,255,224,0.30) !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] div[data-baseweb="select"] * {
+            color: #F6F7FB !important;
+        }
+
+        /* Slider cleanup: no full rectangular glow, only thin track + thumb */
+        [data-testid="stSidebar"] .stSlider {
+            padding-bottom: 0.35rem !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] {
+            background: transparent !important;
+            padding-top: 0.3rem !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div {
+            background: transparent !important;
+            box-shadow: none !important;
+            height: 8px !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] > div > div {
+            background: linear-gradient(90deg, #5FFFE0, #7CFF8A) !important;
+            box-shadow: none !important;
+            height: 5px !important;
+            border-radius: 999px !important;
+        }
+        [data-testid="stSidebar"] .stSlider [role="slider"] {
+            width: 18px !important;
+            height: 18px !important;
+            background: #5FFFE0 !important;
+            border: 3px solid #10162B !important;
+            box-shadow: 0 0 0 2px rgba(95,255,224,0.70), 0 0 16px rgba(95,255,224,0.30) !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-testid="stThumbValue"] {
+            color: #5FFFE0 !important;
+            font-weight: 900 !important;
+            text-shadow: 0 0 10px rgba(95,255,224,0.25) !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-testid="stTickBar"] {
+            color: #8EA2C6 !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
