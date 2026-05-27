@@ -8,6 +8,20 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.data_loader import available_leagues, available_seasons, load_players_enriched
+from src.gk_data_loader import available_gk_leagues, available_gk_seasons, load_gk_enriched
+from src.gk_metric_catalog import (
+    BIG_FIVE_LEAGUES as GK_BIG_FIVE_LEAGUES,
+    GK_CARD_GROUPS,
+    GK_RADAR_AXES,
+)
+from src.gk_scoring import (
+    all_group_scores as all_gk_group_scores,
+    build_gk_reference_df,
+    format_metric_value as format_gk_metric_value,
+    metric_value_and_percentile as gk_metric_value_and_percentile,
+    overall as gk_overall,
+    radar_axis_score as gk_radar_axis_score,
+)
 from src.metric_catalog import BIG_FIVE_LEAGUES, CARD_GROUPS, RADAR_AXES, ROLE_BUCKETS
 from src.scoring import (
     all_group_scores,
@@ -24,11 +38,25 @@ inject_css()
 
 st.markdown('<div class="fm-title">PLAYER COMPARISON</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="fm-subtitle">Confronto player-vs-player · valori raw/PAdj · barre e score in percentile</div>',
+    '<div class="fm-subtitle">Confronto player-vs-player · outfield o GK · valori raw/PAdj · barre e score in percentile</div>',
     unsafe_allow_html=True,
 )
 
-df = load_players_enriched()
+player_type = st.selectbox("Comparison type", ["Outfield players", "Goalkeepers"], index=0)
+
+IS_GK = player_type == "Goalkeepers"
+if IS_GK:
+    df = load_gk_enriched()
+    GROUPS = GK_CARD_GROUPS
+    RADAR = GK_RADAR_AXES
+    big_five = GK_BIG_FIVE_LEAGUES
+    type_label = "GK"
+else:
+    df = load_players_enriched()
+    GROUPS = CARD_GROUPS
+    RADAR = None
+    big_five = BIG_FIVE_LEAGUES
+    type_label = "OUTFIELD"
 
 
 def _fmt_text(value, fallback="—") -> str:
@@ -46,6 +74,14 @@ def _fmt_intish(value, suffix="") -> str:
         return f"{value}{suffix}"
 
 
+def _available_seasons(data: pd.DataFrame) -> list[str]:
+    return available_gk_seasons(data) if IS_GK else available_seasons(data)
+
+
+def _available_leagues(data: pd.DataFrame) -> list[str]:
+    return available_gk_leagues(data) if IS_GK else available_leagues(data)
+
+
 def _player_pool(data: pd.DataFrame, season: str, league: str, team: str) -> pd.DataFrame:
     pool = data[data["Season"].astype(str).eq(str(season))].copy()
     if league != "All leagues":
@@ -57,13 +93,13 @@ def _player_pool(data: pd.DataFrame, season: str, league: str, team: str) -> pd.
 
 def _player_selector(prefix: str, title: str, default_league: str | None = None) -> pd.Series:
     st.markdown(f'<div class="comparison-controls-title">{title}</div>', unsafe_allow_html=True)
-    seasons = available_seasons(df)
+    seasons = _available_seasons(df)
     c1, c2, c3, c4 = st.columns([1.0, 1.35, 1.35, 1.55])
     with c1:
         season = st.selectbox("Season", seasons, index=0, key=f"{prefix}_season", label_visibility="collapsed")
 
     season_df = df[df["Season"].astype(str).eq(str(season))].copy()
-    leagues = ["All leagues", *available_leagues(season_df)]
+    leagues = ["All leagues", *_available_leagues(season_df)]
     league_index = 0
     if default_league and default_league in leagues:
         league_index = leagues.index(default_league)
@@ -80,10 +116,12 @@ def _player_selector(prefix: str, title: str, default_league: str | None = None)
         st.warning(f"Nessun giocatore disponibile per {title.lower()}.")
         st.stop()
 
-    options = (
-        pool.assign(_label=pool["Player"].astype(str) + " · " + pool["Team"].astype(str) + " · " + pool["Position"].astype(str))
-        .sort_values(["Player", "Team", "Position"])
-    )
+    if IS_GK:
+        label_series = pool["Player"].astype(str) + " · " + pool["Team"].astype(str)
+    else:
+        label_series = pool["Player"].astype(str) + " · " + pool["Team"].astype(str) + " · " + pool["Position"].astype(str)
+
+    options = pool.assign(_label=label_series).sort_values(["Player", "Team"])
     with c4:
         selected_label = st.selectbox("Player", options["_label"].tolist(), key=f"{prefix}_player", label_visibility="collapsed")
     idx = options.loc[options["_label"].eq(selected_label)].index[0]
@@ -95,45 +133,63 @@ st.markdown('<div style="height:10px;border-bottom:1px solid rgba(95,255,224,0.1
 selected_player = _player_selector("sel", "SELECTED PLAYER", default_league=_fmt_text(comparison_player.get("League")))
 
 context_cols = st.columns([1.1, 1.0, 1.1, 1.15, 1.15])
-role_keys = list(ROLE_BUCKETS.keys())
-default_role = selected_player.get("Role bucket", "AM/W")
-default_role_index = role_keys.index(default_role) if default_role in role_keys else 0
-with context_cols[0]:
-    compare_role = st.selectbox("Compare as role", role_keys, index=default_role_index)
+
+if IS_GK:
+    compare_role = "GK"
+    with context_cols[0]:
+        st.markdown('<div class="control-label">Compare as role</div><div class="minute-stepper-value">GK only</div>', unsafe_allow_html=True)
+else:
+    role_keys = list(ROLE_BUCKETS.keys())
+    default_role = selected_player.get("Role bucket", "AM/W")
+    default_role_index = role_keys.index(default_role) if default_role in role_keys else 0
+    with context_cols[0]:
+        compare_role = st.selectbox("Compare as role", role_keys, index=default_role_index)
+
 with context_cols[1]:
     mode = st.selectbox("Metric value", ["Raw", "Possession-adjusted"], index=1)
 with context_cols[2]:
     reference_scope = st.selectbox("Reference scope", ["Player league", "Big Five", "All leagues", "Custom leagues"], index=0)
+
 custom_leagues: list[str] = []
 with context_cols[3]:
     if reference_scope == "Custom leagues":
-        all_leagues = available_leagues(df)
+        all_leagues = _available_leagues(df)
         custom_leagues = st.multiselect(
             "Custom leagues",
             all_leagues,
-            default=[l for l in BIG_FIVE_LEAGUES if l in all_leagues],
+            default=[l for l in big_five if l in all_leagues],
         )
     else:
         st.markdown('<div class="control-label">Custom leagues</div><div class="minute-stepper-value">—</div>', unsafe_allow_html=True)
 
 with context_cols[4]:
     st.markdown('<div class="control-label">Min ref minutes</div>', unsafe_allow_html=True)
-    if "comparison_min_minutes_ref" not in st.session_state:
-        st.session_state["comparison_min_minutes_ref"] = 900
+    session_key = "gk_comp_min_minutes_ref" if IS_GK else "comparison_min_minutes_ref"
+    if session_key not in st.session_state:
+        st.session_state[session_key] = 900
     b1, bv, b2 = st.columns([0.8, 1.2, 0.8])
     with b1:
-        if st.button("−", key="comp_minutes_minus", use_container_width=True):
-            st.session_state["comparison_min_minutes_ref"] = max(0, int(st.session_state["comparison_min_minutes_ref"]) - 100)
+        if st.button("−", key=f"{session_key}_minus", use_container_width=True):
+            st.session_state[session_key] = max(0, int(st.session_state[session_key]) - 100)
     with b2:
-        if st.button("+", key="comp_minutes_plus", use_container_width=True):
-            st.session_state["comparison_min_minutes_ref"] = min(2500, int(st.session_state["comparison_min_minutes_ref"]) + 100)
-    min_minutes = int(st.session_state["comparison_min_minutes_ref"])
+        if st.button("+", key=f"{session_key}_plus", use_container_width=True):
+            st.session_state[session_key] = min(2500, int(st.session_state[session_key]) + 100)
+    min_minutes = int(st.session_state[session_key])
     with bv:
         st.markdown(f'<div class="minute-stepper-value">{min_minutes}</div>', unsafe_allow_html=True)
 
 
 def _build_ref(player_row: pd.Series) -> pd.DataFrame:
     player_league = str(player_row.get("League")) if pd.notna(player_row.get("League")) else None
+    if IS_GK:
+        return build_gk_reference_df(
+            df,
+            season=str(player_row.get("Season")),
+            reference_scope=reference_scope,
+            player_league=player_league,
+            custom_leagues=custom_leagues,
+            min_minutes=min_minutes,
+        )
     return build_reference_df(
         df,
         season=str(player_row.get("Season")),
@@ -147,10 +203,17 @@ def _build_ref(player_row: pd.Series) -> pd.DataFrame:
 
 sel_ref = _build_ref(selected_player)
 cmp_ref = _build_ref(comparison_player)
-sel_scores = all_group_scores(selected_player, sel_ref, mode)
-cmp_scores = all_group_scores(comparison_player, cmp_ref, mode)
-sel_overall = role_overall(sel_scores, compare_role)
-cmp_overall = role_overall(cmp_scores, compare_role)
+
+if IS_GK:
+    sel_scores = all_gk_group_scores(selected_player, sel_ref, mode)
+    cmp_scores = all_gk_group_scores(comparison_player, cmp_ref, mode)
+    sel_overall = gk_overall(sel_scores)
+    cmp_overall = gk_overall(cmp_scores)
+else:
+    sel_scores = all_group_scores(selected_player, sel_ref, mode)
+    cmp_scores = all_group_scores(comparison_player, cmp_ref, mode)
+    sel_overall = role_overall(sel_scores, compare_role)
+    cmp_overall = role_overall(cmp_scores, compare_role)
 
 
 def _overall_txt(value: float) -> str:
@@ -160,9 +223,10 @@ def _overall_txt(value: float) -> str:
 def _meta(player_row: pd.Series) -> str:
     age = _fmt_intish(player_row.get("Age"), "y")
     minutes = _fmt_intish(player_row.get("Minutes played"), " min")
+    position = "GK" if IS_GK else _fmt_text(player_row.get("Position"))
     return (
         f"{_fmt_text(player_row.get('Season'))} · {minutes} · {age}<br>"
-        f"{_fmt_text(player_row.get('Team'))} · {_fmt_text(player_row.get('League'))} · {_fmt_text(player_row.get('Position'))}"
+        f"{_fmt_text(player_row.get('Team'))} · {_fmt_text(player_row.get('League'))} · {position}"
     )
 
 
@@ -230,10 +294,20 @@ def comparison_metric_row(label: str, sel_value: str, sel_pct: float, cmp_value:
     """
 
 
+def _metric_vp(player_row: pd.Series, ref: pd.DataFrame, metric: dict, mode: str):
+    if IS_GK:
+        return gk_metric_value_and_percentile(player_row, ref, metric, mode)
+    return metric_value_and_percentile(player_row, df, ref, metric, mode)
+
+
+def _format_value(value: float, fmt: str) -> str:
+    return format_gk_metric_value(value, fmt) if IS_GK else format_metric_value(value, fmt)
+
+
 st.markdown("### Metric families")
 panel_cols = st.columns(2)
 
-for idx, (group_name, group) in enumerate(CARD_GROUPS.items()):
+for idx, (group_name, group) in enumerate(GROUPS.items()):
     group_color = group.get("color", "#5FFFE0")
     sel_score = sel_scores.get(group_name, float("nan"))
     cmp_score = cmp_scores.get(group_name, float("nan"))
@@ -247,13 +321,13 @@ for idx, (group_name, group) in enumerate(CARD_GROUPS.items()):
       </div>
     """
     for metric in group.get("metrics", []):
-        sel_value, sel_pct = metric_value_and_percentile(selected_player, df, sel_ref, metric, mode)
-        cmp_value, cmp_pct = metric_value_and_percentile(comparison_player, df, cmp_ref, metric, mode)
+        sel_value, sel_pct = _metric_vp(selected_player, sel_ref, metric, mode)
+        cmp_value, cmp_pct = _metric_vp(comparison_player, cmp_ref, metric, mode)
         html += comparison_metric_row(
             metric.get("label", metric.get("column", "Metric")),
-            format_metric_value(sel_value, metric.get("fmt", "0.00")),
+            _format_value(sel_value, metric.get("fmt", "0.00")),
             sel_pct,
-            format_metric_value(cmp_value, metric.get("fmt", "0.00")),
+            _format_value(cmp_value, metric.get("fmt", "0.00")),
             cmp_pct,
         )
     html += "</div>"
@@ -267,8 +341,10 @@ def radar_overlay_figure(labels: list[str], sel_values: list[float], cmp_values:
         return [0 if pd.isna(v) else float(v) for v in vals]
 
     closed_labels = labels + [labels[0]]
-    sel_closed = clean(sel_values) + [clean(sel_values)[0]]
-    cmp_closed = clean(cmp_values) + [clean(cmp_values)[0]]
+    sel_clean = clean(sel_values)
+    cmp_clean = clean(cmp_values)
+    sel_closed = sel_clean + [sel_clean[0]]
+    cmp_closed = cmp_clean + [cmp_clean[0]]
 
     fig = go.Figure()
     fig.add_trace(
@@ -313,13 +389,19 @@ def radar_overlay_figure(labels: list[str], sel_values: list[float], cmp_values:
 
 
 st.markdown("### Comparison radar")
-axes = RADAR_AXES.get(compare_role, [])
+axes = GK_RADAR_AXES if IS_GK else RADAR_AXES.get(compare_role, [])
 if axes:
     labels = [axis["axis"] for axis in axes]
-    sel_style = [radar_axis_score(selected_player, sel_ref, axis.get("style", []), mode) for axis in axes]
-    cmp_style = [radar_axis_score(comparison_player, cmp_ref, axis.get("style", []), mode) for axis in axes]
-    sel_perf = [radar_axis_score(selected_player, sel_ref, axis.get("performance", []), mode) for axis in axes]
-    cmp_perf = [radar_axis_score(comparison_player, cmp_ref, axis.get("performance", []), mode) for axis in axes]
+    if IS_GK:
+        sel_style = [gk_radar_axis_score(selected_player, sel_ref, axis.get("style", []), mode) for axis in axes]
+        cmp_style = [gk_radar_axis_score(comparison_player, cmp_ref, axis.get("style", []), mode) for axis in axes]
+        sel_perf = [gk_radar_axis_score(selected_player, sel_ref, axis.get("performance", []), mode) for axis in axes]
+        cmp_perf = [gk_radar_axis_score(comparison_player, cmp_ref, axis.get("performance", []), mode) for axis in axes]
+    else:
+        sel_style = [radar_axis_score(selected_player, sel_ref, axis.get("style", []), mode) for axis in axes]
+        cmp_style = [radar_axis_score(comparison_player, cmp_ref, axis.get("style", []), mode) for axis in axes]
+        sel_perf = [radar_axis_score(selected_player, sel_ref, axis.get("performance", []), mode) for axis in axes]
+        cmp_perf = [radar_axis_score(comparison_player, cmp_ref, axis.get("performance", []), mode) for axis in axes]
 
     r1, r2 = st.columns(2)
     with r1:
@@ -335,7 +417,10 @@ else:
 
 with st.expander("Reference group details"):
     c1, c2 = st.columns(2)
-    cols_to_show = ["Player", "Team", "League", "Season", "Position", "Minutes played", "Role bucket"]
+    if IS_GK:
+        cols_to_show = ["Player", "Team", "League", "Season", "Minutes played", "Nationality"]
+    else:
+        cols_to_show = ["Player", "Team", "League", "Season", "Position", "Minutes played", "Role bucket"]
     with c1:
         st.markdown("**Selected player reference**")
         st.dataframe(sel_ref[cols_to_show].sort_values("Minutes played", ascending=False), use_container_width=True)
