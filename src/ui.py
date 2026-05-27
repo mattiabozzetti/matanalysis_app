@@ -415,6 +415,81 @@ def inject_css() -> None:
             color: #8EA2C6 !important;
         }
 
+
+        /* FIX 6: dark dropdown selected state + minutes stepper */
+        body ul[role="listbox"],
+        body div[role="listbox"],
+        body [data-baseweb="menu"] {
+            background: #0B1024 !important;
+            border: 1px solid rgba(95,255,224,0.30) !important;
+        }
+        body li[role="option"],
+        body div[role="option"] {
+            background: #0B1024 !important;
+            color: #F6F7FB !important;
+        }
+        body li[role="option"] *,
+        body div[role="option"] * {
+            background: transparent !important;
+            color: #F6F7FB !important;
+        }
+        body li[role="option"]:hover,
+        body div[role="option"]:hover {
+            background: #111A33 !important;
+            color: #5FFFE0 !important;
+        }
+        body li[role="option"]:hover *,
+        body div[role="option"]:hover * {
+            color: #5FFFE0 !important;
+        }
+        body li[role="option"][aria-selected="true"],
+        body div[role="option"][aria-selected="true"] {
+            background: #10162B !important;
+            color: #5FFFE0 !important;
+            box-shadow: inset 3px 0 0 #5FFFE0 !important;
+        }
+        body li[role="option"][aria-selected="true"] *,
+        body div[role="option"][aria-selected="true"] * {
+            color: #5FFFE0 !important;
+            background: transparent !important;
+        }
+
+        .control-label {
+            color: #C8D8F8;
+            font-weight: 800;
+            font-size: 0.92rem;
+            margin: 1.05rem 0 0.45rem 0;
+        }
+        .minute-stepper-value {
+            height: 44px;
+            border-radius: 14px;
+            background: #10162B;
+            border: 1px solid rgba(95,255,224,0.30);
+            color: #5FFFE0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size: 1.05rem;
+            font-weight: 900;
+            box-shadow: inset 0 0 18px rgba(95,255,224,0.05);
+        }
+        [data-testid="stSidebar"] .stButton > button {
+            height: 44px !important;
+            border-radius: 14px !important;
+            background: #10162B !important;
+            color: #5FFFE0 !important;
+            border: 1px solid rgba(95,255,224,0.32) !important;
+            font-size: 1.25rem !important;
+            font-weight: 900 !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] .stButton > button:hover {
+            background: #111A33 !important;
+            color: #7CFF8A !important;
+            border-color: rgba(124,255,138,0.55) !important;
+            box-shadow: 0 0 18px rgba(95,255,224,0.12) !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,

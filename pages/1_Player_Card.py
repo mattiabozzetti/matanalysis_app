@@ -78,7 +78,22 @@ with st.sidebar:
             default=[l for l in BIG_FIVE_LEAGUES if l in available_leagues(season_df)],
         )
 
-    min_minutes = st.slider("Minimum minutes in reference group", 0, 2500, 900, step=100)
+    st.markdown('<div class="control-label">Minimum minutes in reference group</div>', unsafe_allow_html=True)
+    if "min_minutes_ref" not in st.session_state:
+        st.session_state["min_minutes_ref"] = 900
+
+    minus_col, value_col, plus_col = st.columns([0.9, 1.5, 0.9])
+    with minus_col:
+        if st.button("−", key="minutes_minus", use_container_width=True):
+            st.session_state["min_minutes_ref"] = max(0, int(st.session_state["min_minutes_ref"]) - 100)
+    with plus_col:
+        if st.button("+", key="minutes_plus", use_container_width=True):
+            st.session_state["min_minutes_ref"] = min(2500, int(st.session_state["min_minutes_ref"]) + 100)
+
+    min_minutes = int(st.session_state["min_minutes_ref"])
+    with value_col:
+        st.markdown(f'<div class="minute-stepper-value">{min_minutes}</div>', unsafe_allow_html=True)
+
     mode = st.selectbox("Metric value", ["Raw", "Possession-adjusted"], index=0)
 
 player_league = str(player.get("League")) if pd.notna(player.get("League")) else None
