@@ -37,6 +37,14 @@ from src.export_utils import render_export_png_button
 st.set_page_config(page_title="Player Comparison", page_icon="⚔️", layout="wide")
 inject_css()
 
+# Export button
+export_left, export_right = st.columns([5.5, 1.2])
+with export_left:
+    st.write("")
+with export_right:
+    render_export_png_button("player_comparison")
+
+
 st.markdown('<div class="fm-title">PLAYER COMPARISON</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="fm-subtitle">Confronto player-vs-player · outfield o GK · valori raw/PAdj · barre e score in percentile</div>',

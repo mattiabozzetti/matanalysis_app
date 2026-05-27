@@ -5,15 +5,10 @@ import streamlit.components.v1 as components
 
 
 def render_export_png_button(filename_stem: str = "scouting_page") -> None:
-    """Render a client-side PNG export button.
-
-    It tries to capture the full Streamlit app canvas. For long pages, browser security
-    and Streamlit's internal scroll containers may still limit the capture in some cases.
-    """
     safe_name = html.escape(filename_stem, quote=True)
     components.html(
         f"""
-        <div style="display:flex;justify-content:flex-end;margin:0.15rem 0 0.35rem 0;">
+        <div style="display:flex;justify-content:flex-end;margin:0.10rem 0 0.70rem 0;">
           <button id="export-btn" style="
             background:#10162B;
             color:#F6F7FB;
@@ -25,38 +20,12 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
             cursor:pointer;
           ">⬇ Export PNG</button>
         </div>
-
         <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
         <script>
         const btn = document.getElementById("export-btn");
 
         function sleep(ms) {{
           return new Promise(resolve => setTimeout(resolve, ms));
-        }}
-
-        function qsa(doc, selector) {{
-          return Array.from(doc.querySelectorAll(selector));
-        }}
-
-        function saveStyle(el) {{
-          return {{
-            el: el,
-            height: el.style.height,
-            minHeight: el.style.minHeight,
-            maxHeight: el.style.maxHeight,
-            overflow: el.style.overflow,
-            overflowY: el.style.overflowY,
-            visibility: el.style.visibility
-          }};
-        }}
-
-        function restoreStyle(saved) {{
-          saved.el.style.height = saved.height;
-          saved.el.style.minHeight = saved.minHeight;
-          saved.el.style.maxHeight = saved.maxHeight;
-          saved.el.style.overflow = saved.overflow;
-          saved.el.style.overflowY = saved.overflowY;
-          saved.el.style.visibility = saved.visibility;
         }}
 
         btn.addEventListener("mouseenter", () => {{
@@ -69,86 +38,44 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
         }});
 
         btn.addEventListener("click", async () => {{
-          const parentWindow = window.parent;
-          const doc = parentWindow.document;
+          const w = window.parent;
+          const doc = w.document;
           const root = doc.documentElement;
           const body = doc.body;
-          const target =
-            doc.querySelector(".stApp") ||
-            doc.querySelector("[data-testid='stAppViewContainer']") ||
-            body;
-
+          const app = doc.querySelector(".stApp") || doc.querySelector("[data-testid='stAppViewContainer']") || body;
           const oldText = btn.innerText;
-          const oldScrollY = parentWindow.scrollY || root.scrollTop || body.scrollTop || 0;
+          const oldScroll = w.scrollY || root.scrollTop || body.scrollTop || 0;
           btn.innerText = "Preparing PNG...";
 
-          const expandSelectors = [
-            "html",
-            "body",
-            ".stApp",
-            "[data-testid='stAppViewContainer']",
-            "[data-testid='stMain']",
-            "section.main",
-            ".block-container"
-          ];
-
-          const hideSelectors = [
+          const hide = [
             "[data-testid='stToolbar']",
             "[data-testid='stHeader']",
             "[data-testid='stDecoration']",
             "[data-testid='stStatusWidget']",
             "iframe[title='streamlit_component']"
-          ];
+          ].flatMap(sel => Array.from(doc.querySelectorAll(sel)));
 
-          const expandedNodes = expandSelectors.flatMap(sel => qsa(doc, sel));
-          const hiddenNodes = hideSelectors.flatMap(sel => qsa(doc, sel));
-          const saved = [...new Set([...expandedNodes, ...hiddenNodes])].map(saveStyle);
-
+          const oldVis = hide.map(el => [el, el.style.visibility]);
           try {{
-            parentWindow.scrollTo(0, 0);
+            hide.forEach(el => el.style.visibility = "hidden");
+            w.scrollTo(0, 0);
             await sleep(250);
 
-            const fullWidth = Math.ceil(Math.max(
-              root.scrollWidth, body.scrollWidth, root.offsetWidth, body.offsetWidth,
-              root.clientWidth, body.clientWidth,
-              ...expandedNodes.map(n => n.scrollWidth || 0),
-              ...expandedNodes.map(n => n.offsetWidth || 0)
-            ));
+            const fullWidth = Math.max(root.scrollWidth, body.scrollWidth, app.scrollWidth, root.clientWidth, body.clientWidth);
+            const fullHeight = Math.max(root.scrollHeight, body.scrollHeight, app.scrollHeight, root.clientHeight, body.clientHeight);
 
-            const fullHeight = Math.ceil(Math.max(
-              root.scrollHeight, body.scrollHeight, root.offsetHeight, body.offsetHeight,
-              root.clientHeight, body.clientHeight,
-              ...expandedNodes.map(n => n.scrollHeight || 0),
-              ...expandedNodes.map(n => n.offsetHeight || 0)
-            ));
-
-            expandedNodes.forEach(el => {{
-              el.style.maxHeight = "none";
-              el.style.overflow = "visible";
-              el.style.overflowY = "visible";
-              el.style.minHeight = fullHeight + "px";
-            }});
-
-            hiddenNodes.forEach(el => {{
-              el.style.visibility = "hidden";
-            }});
-
-            await sleep(300);
-
-            const canvas = await html2canvas(target, {{
+            const canvas = await html2canvas(app, {{
               backgroundColor: "#070A18",
               useCORS: true,
               allowTaint: true,
-              logging: false,
               scale: 2,
-              x: 0,
-              y: 0,
               scrollX: 0,
               scrollY: 0,
+              windowWidth: fullWidth,
+              windowHeight: fullHeight,
               width: fullWidth,
               height: fullHeight,
-              windowWidth: fullWidth,
-              windowHeight: fullHeight
+              logging: false
             }});
 
             const link = doc.createElement("a");
@@ -159,14 +86,14 @@ def render_export_png_button(filename_stem: str = "scouting_page") -> None:
             link.remove();
           }} catch (err) {{
             console.error(err);
-            alert("Export PNG non riuscito. Prova con zoom browser più basso oppure una pagina meno lunga.");
+            alert("Export PNG non riuscito.");
           }} finally {{
-            saved.forEach(restoreStyle);
-            parentWindow.scrollTo(0, oldScrollY);
+            oldVis.forEach(([el, visibility]) => el.style.visibility = visibility);
+            w.scrollTo(0, oldScroll);
             btn.innerText = oldText;
           }}
         }});
         </script>
         """,
-        height=58,
+        height=64,
     )
