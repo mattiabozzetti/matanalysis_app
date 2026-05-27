@@ -14,6 +14,7 @@ from src.metric_catalog import ROLE_BUCKETS
 from src.scoring import build_reference_df
 from src.similarity import (
     build_feature_matrix,
+    role_similarity_features,
     competition_label,
     competition_options,
     fit_index_scores,
@@ -253,6 +254,32 @@ with st.sidebar:
     with value_col:
         st.markdown(f'<div class="minute-stepper-value">{min_minutes}</div>', unsafe_allow_html=True)
 
+    st.markdown("---")
+    st.markdown("### Age filter")
+    age_min, age_max = st.columns(2)
+    with age_min:
+        min_age = st.number_input("Min age", min_value=14, max_value=45, value=16, step=1)
+    with age_max:
+        max_age = st.number_input("Max age", min_value=14, max_value=45, value=40, step=1)
+
+    if max_age < min_age:
+        st.warning("Max age deve essere ≥ Min age.")
+        max_age = min_age
+
+    manual_feature_weights = {}
+    with st.expander("Advanced metric weights"):
+        st.caption("Peso opzionale delle feature usate per la similarità. 1.00 = neutro.")
+        preview_features = role_similarity_features(compare_role, profile)
+        weight_options = [0.50, 0.75, 1.00, 1.25, 1.50, 2.00]
+        for feature in preview_features:
+            feature_name = feature["name"]
+            manual_feature_weights[feature_name] = st.selectbox(
+                feature_name,
+                weight_options,
+                index=2,
+                key=f"sim_weight_{compare_role}_{profile}_{feature_name}",
+            )
+
 selected_comp_label = competition_label(selected_player)
 
 candidate_pool_all_roles = scope_pool(
@@ -264,6 +291,9 @@ candidate_pool_all_roles = scope_pool(
     min_minutes,
 )
 candidate_pool = candidate_pool_all_roles[candidate_pool_all_roles["Role bucket"].astype(str).eq(compare_role)].copy()
+candidate_pool = candidate_pool[
+    pd.to_numeric(candidate_pool["Age"], errors="coerce").between(min_age, max_age, inclusive="both")
+].copy()
 
 # Ensure the selected player can be represented even if he is outside the chosen role/candidate group.
 reference_df = candidate_pool.copy()
@@ -295,6 +325,7 @@ target_reference = df[
     df["Season"].astype(str).eq(str(season))
     & df["Role bucket"].astype(str).eq(compare_role)
     & (pd.to_numeric(df["Minutes played"], errors="coerce").fillna(0) >= min_minutes)
+    & (pd.to_numeric(df["Age"], errors="coerce").between(min_age, max_age, inclusive="both"))
 ].copy()
 target_reference_with_scope = target_reference.copy()
 target_matrix, _ = build_feature_matrix(target_reference_with_scope, reference_df, compare_role, profile, mode)
@@ -306,12 +337,18 @@ league_profile, weights, target_n = league_profile_and_weights(
     intensity=weighting_intensity,
 )
 
+manual_weights = pd.Series(manual_feature_weights, dtype=float)
+if weights is None or weights.empty:
+    combined_weights = manual_weights.reindex(feature_names).fillna(1.0)
+else:
+    combined_weights = weights.reindex(feature_names).fillna(1.0) * manual_weights.reindex(feature_names).fillna(1.0)
+
 similarity_scores = weighted_similarity_scores(
     selected_vector,
     candidate_matrix,
-    weights if weighting_intensity > 0 else None,
+    combined_weights,
 )
-fit_scores = fit_index_scores(candidate_matrix, league_profile, weights)
+fit_scores = fit_index_scores(candidate_matrix, league_profile, combined_weights)
 
 results = candidate_pool.copy()
 results["Similarity"] = similarity_scores
@@ -341,6 +378,7 @@ st.markdown(
         <span class="sim-pill">Mode: {html.escape(mode)}</span>
         <span class="sim-pill">League weighting: {html.escape(weighting_label)}</span>
         <span class="sim-pill">Target: {html.escape(target_competition)}</span>
+        <span class="sim-pill">Age: {min_age}-{max_age}</span>
         <span class="sim-pill">Features: {len(feature_names)}</span>
       </div>
     </div>
@@ -350,7 +388,7 @@ st.markdown(
 
 st.markdown('<div class="sim-title">20 Most Similar Players</div>', unsafe_allow_html=True)
 st.markdown(
-    f'<div class="sim-subtitle">{html.escape(reference_scope)} · {html.escape(str(season))} · {html.escape(compare_role)} · ≥ {min_minutes} minutes · target league n={target_n}</div>',
+    f'<div class="sim-subtitle">{html.escape(reference_scope)} · {html.escape(str(season))} · {html.escape(compare_role)} · age {min_age}-{max_age} · ≥ {min_minutes} minutes · target league n={target_n}</div>',
     unsafe_allow_html=True,
 )
 
@@ -420,7 +458,7 @@ with st.expander("Similarity model details"):
         {
             "Feature": feature_names,
             "Selected percentile": selected_vector.reindex(feature_names).round(1).values,
-            "League weight": weights.reindex(feature_names).round(2).values if not weights.empty else np.nan,
+            "Final weight": combined_weights.reindex(feature_names).round(2).values if not combined_weights.empty else np.nan,
             "Target league profile": league_profile.reindex(feature_names).round(1).values if not league_profile.empty else np.nan,
         }
     )
