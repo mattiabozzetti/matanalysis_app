@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .gk_metric_catalog import BIG_FIVE_LEAGUES, GK_CARD_GROUPS, GK_GROUP_WEIGHTS
+from .competition_utils import filter_big_five
 
 
 def sigmoid_possession_adjust_series(
@@ -73,7 +74,7 @@ def build_gk_reference_df(
     if reference_scope == "Player league" and player_league:
         ref = ref[ref["League"].astype(str).eq(str(player_league))]
     elif reference_scope == "Big Five":
-        ref = ref[ref["League"].isin(BIG_FIVE_LEAGUES)]
+        ref = filter_big_five(ref)
     elif reference_scope == "Custom leagues" and custom_leagues:
         ref = ref[ref["League"].isin(custom_leagues)]
     elif reference_scope == "All leagues":

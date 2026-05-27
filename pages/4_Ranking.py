@@ -11,6 +11,7 @@ import streamlit as st
 from src.data_loader import available_leagues, available_seasons, load_players_enriched
 from src.export_utils import render_export_png_button
 from src.metric_catalog import BIG_FIVE_LEAGUES, CARD_GROUPS, ROLE_BUCKETS
+from src.competition_utils import filter_big_five
 from src.scoring import (
     all_group_scores,
     build_reference_df,
@@ -102,7 +103,7 @@ def make_scope_pool(data: pd.DataFrame, season: str, scope: str, league: str | N
     if scope == "Single league" and league:
         pool = pool[pool["League"].astype(str).eq(str(league))]
     elif scope == "Big Five":
-        pool = pool[pool["League"].isin(BIG_FIVE_LEAGUES)]
+        pool = filter_big_five(pool)
     elif scope == "All leagues":
         pass
     return pool.reset_index(drop=True)
