@@ -8,13 +8,21 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+from src.competition_utils import filter_big_five
 from src.data_loader import available_leagues, available_seasons, load_players_enriched
 from src.export_utils import render_export_png_button
-from src.metric_catalog import BIG_FIVE_LEAGUES, CARD_GROUPS, ROLE_BUCKETS
-from src.competition_utils import filter_big_five
+from src.gk_data_loader import available_gk_leagues, available_gk_seasons, load_gk_enriched
+from src.gk_metric_catalog import GK_CARD_GROUPS
+from src.gk_scoring import (
+    all_group_scores as all_gk_group_scores,
+    format_metric_value as format_gk_metric_value,
+    metric_series as gk_metric_series,
+    overall as gk_overall,
+    percentile_rank as gk_percentile_rank,
+)
+from src.metric_catalog import CARD_GROUPS, ROLE_BUCKETS
 from src.scoring import (
     all_group_scores,
-    build_reference_df,
     format_metric_value,
     metric_series,
     percentile_rank,
@@ -27,7 +35,7 @@ inject_css()
 
 st.markdown('<div class="fm-title">RANKING</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="fm-subtitle">Top 5 per metrica · raw o possession-adjusted · campionato singolo, Big Five o tutte le leghe</div>',
+    '<div class="fm-subtitle">Top 5 per metrica · giocatori di movimento e portieri · raw o possession-adjusted</div>',
     unsafe_allow_html=True,
 )
 
@@ -36,8 +44,6 @@ with export_left:
     st.write("")
 with export_right:
     render_export_png_button("ranking")
-
-df = load_players_enriched()
 
 
 def safe_text(value: Any, fallback: str = "—") -> str:
@@ -79,7 +85,7 @@ def metric_higher_is_better(metric: dict[str, Any] | str) -> bool:
     return bool(metric.get("higher_is_better", True))
 
 
-OVERVIEW_METRICS: list[dict[str, Any]] = [
+OUTFIELD_OVERVIEW_METRICS: list[dict[str, Any]] = [
     {"label": "Goals", "column": "Goals", "adjustment": "on_ball", "higher_is_better": True, "fmt": "0.00"},
     {"label": "xG + xA", "derived": "xG + xA", "adjustment": "on_ball", "higher_is_better": True, "fmt": "0.00"},
     {"label": "Goals + Assists", "derived": "Goals + Assists", "adjustment": "on_ball", "higher_is_better": True, "fmt": "0.00"},
@@ -90,11 +96,28 @@ OVERVIEW_METRICS: list[dict[str, Any]] = [
     {"label": "Pass accuracy %", "column": "Passes accurate, %", "adjustment": "none", "higher_is_better": True, "fmt": "%"},
 ]
 
+GK_OVERVIEW_METRICS: list[dict[str, Any]] = [
+    {"label": "Goals prevented", "column": "Goals prevented", "adjustment": "none", "higher_is_better": True, "fmt": "0.00"},
+    {"label": "Goals prevented %", "column": "Goals prevented, %", "adjustment": "none", "higher_is_better": True, "fmt": "%"},
+    {"label": "Shots saved %", "column": "Shots saved, %", "adjustment": "none", "higher_is_better": True, "fmt": "%"},
+    {"label": "xG per goal conceded", "column": "xG per goal conceded", "adjustment": "none", "higher_is_better": True, "fmt": "0.00"},
+    {"label": "Cross claim rate", "column": "Cross claim rate", "adjustment": "none", "higher_is_better": True, "fmt": "%"},
+    {"label": "Sweeping actions", "column": "Sweeping actions", "adjustment": "off_ball", "higher_is_better": True, "fmt": "0.00"},
+    {"label": "Pass accuracy %", "column": "Passes accurate, %", "adjustment": "none", "higher_is_better": True, "fmt": "%"},
+    {"label": "Long pass accuracy %", "column": "Long passes accurate, %", "adjustment": "none", "higher_is_better": True, "fmt": "%"},
+]
 
-def get_metrics_for_family(family: str) -> list[dict[str, Any]]:
+
+def get_outfield_metrics_for_family(family: str) -> list[dict[str, Any]]:
     if family == "Overview":
-        return OVERVIEW_METRICS
+        return OUTFIELD_OVERVIEW_METRICS
     return list(CARD_GROUPS.get(family, {}).get("metrics", []))
+
+
+def get_gk_metrics_for_family(family: str) -> list[dict[str, Any]]:
+    if family == "Overview":
+        return GK_OVERVIEW_METRICS
+    return list(GK_CARD_GROUPS.get(family, {}).get("metrics", []))
 
 
 def make_scope_pool(data: pd.DataFrame, season: str, scope: str, league: str | None, min_minutes: int) -> pd.DataFrame:
@@ -109,35 +132,51 @@ def make_scope_pool(data: pd.DataFrame, season: str, scope: str, league: str | N
     return pool.reset_index(drop=True)
 
 
-def make_reference_for_pool(pool: pd.DataFrame, role_filter: str) -> pd.DataFrame:
+def make_outfield_reference(pool_all_positions: pd.DataFrame, role_filter: str) -> pd.DataFrame:
     if role_filter == "All positions":
-        return pool.copy()
-    return pool[pool["Role bucket"].astype(str).eq(role_filter)].copy()
+        return pool_all_positions.copy()
+    return pool_all_positions[pool_all_positions["Role bucket"].astype(str).eq(role_filter)].copy()
 
 
-def rank_metric(pool: pd.DataFrame, reference_df: pd.DataFrame, metric: dict[str, Any], mode: str, top_n: int = 25) -> pd.DataFrame:
-    values = metric_series(pool, metric, mode)
-    ref_values = metric_series(reference_df, metric, mode)
+def rank_metric(
+    pool: pd.DataFrame,
+    reference_df: pd.DataFrame,
+    metric: dict[str, Any],
+    mode: str,
+    *,
+    is_gk: bool,
+    top_n: int = 25,
+) -> pd.DataFrame:
+    series_fn = gk_metric_series if is_gk else metric_series
+    pct_fn = gk_percentile_rank if is_gk else percentile_rank
+
+    values = series_fn(pool, metric, mode)
+    ref_values = series_fn(reference_df, metric, mode)
     higher = metric_higher_is_better(metric)
 
-    out = pool[["Player", "Team", "League", "Season", "Age", "Position", "Role bucket", "Nationality", "Minutes played"]].copy()
+    base_cols = ["Player", "Team", "League", "Season", "Age", "Nationality", "Minutes played"]
+    if not is_gk and "Position" in pool.columns:
+        base_cols.extend(["Position", "Role bucket"])
+    available_cols = [c for c in base_cols if c in pool.columns]
+
+    out = pool[available_cols].copy()
     out["_value"] = pd.to_numeric(values, errors="coerce")
     out = out.dropna(subset=["_value"])
     if out.empty:
         return out
 
-    out["_pct"] = out["_value"].apply(lambda x: percentile_rank(x, ref_values, higher))
+    out["_pct"] = out["_value"].apply(lambda x: pct_fn(x, ref_values, higher))
     out = out.sort_values("_value", ascending=not higher).head(top_n).reset_index(drop=True)
     out.insert(0, "Rank", np.arange(1, len(out) + 1))
     return out
 
 
-def rank_overall(pool: pd.DataFrame, reference_df: pd.DataFrame, role_filter: str, mode: str, top_n: int = 25) -> pd.DataFrame:
+def rank_outfield_overall(pool: pd.DataFrame, reference_df: pd.DataFrame, role_filter: str, mode: str, top_n: int = 25) -> pd.DataFrame:
     if role_filter == "All positions":
         return pd.DataFrame()
 
     records = []
-    for idx, row in pool.iterrows():
+    for _, row in pool.iterrows():
         scores = all_group_scores(row, reference_df, mode)
         ov = role_overall(scores, role_filter)
         if not pd.isna(ov) and not math.isnan(ov):
@@ -165,9 +204,48 @@ def rank_overall(pool: pd.DataFrame, reference_df: pd.DataFrame, role_filter: st
     return out
 
 
+def rank_gk_overall(pool: pd.DataFrame, reference_df: pd.DataFrame, mode: str, top_n: int = 25) -> pd.DataFrame:
+    records = []
+    for _, row in pool.iterrows():
+        scores = all_gk_group_scores(row, reference_df, mode)
+        ov = gk_overall(scores)
+        if not pd.isna(ov) and not math.isnan(ov):
+            records.append(
+                {
+                    "Player": row.get("Player"),
+                    "Team": row.get("Team"),
+                    "League": row.get("League"),
+                    "Season": row.get("Season"),
+                    "Age": row.get("Age"),
+                    "Position": "GK",
+                    "Role bucket": "GK",
+                    "Nationality": row.get("Nationality"),
+                    "Minutes played": row.get("Minutes played"),
+                    "_value": ov,
+                    "_pct": ov,
+                }
+            )
+
+    out = pd.DataFrame.from_records(records)
+    if out.empty:
+        return out
+    out = out.sort_values("_value", ascending=False).head(top_n).reset_index(drop=True)
+    out.insert(0, "Rank", np.arange(1, len(out) + 1))
+    return out
+
+
 with st.sidebar:
     st.markdown("### Ranking filters")
-    seasons = available_seasons(df)
+    dataset_type = st.selectbox("Player type", ["Outfield players", "Goalkeepers"], index=0)
+    is_gk = dataset_type == "Goalkeepers"
+
+    if is_gk:
+        df = load_gk_enriched()
+        seasons = available_gk_seasons(df)
+    else:
+        df = load_players_enriched()
+        seasons = available_seasons(df)
+
     season = st.selectbox("Season", seasons, index=0)
 
     season_df = df[df["Season"].astype(str).eq(str(season))].copy()
@@ -175,13 +253,18 @@ with st.sidebar:
 
     selected_league = None
     if scope == "Single league":
-        selected_league = st.selectbox("League", available_leagues(season_df), index=0)
+        leagues = available_gk_leagues(season_df) if is_gk else available_leagues(season_df)
+        selected_league = st.selectbox("League", leagues, index=0)
 
-    role_options = ["All positions", *list(ROLE_BUCKETS.keys())]
-    role_filter = st.selectbox("Position group", role_options, index=0)
-
-    family_options = ["Overview", *list(CARD_GROUPS.keys())]
-    metric_family = st.selectbox("Metric family", family_options, index=0)
+    if is_gk:
+        role_filter = "GK"
+        family_options = ["Overview", *list(GK_CARD_GROUPS.keys())]
+        metric_family = st.selectbox("Metric family", family_options, index=0)
+    else:
+        role_options = ["All positions", *list(ROLE_BUCKETS.keys())]
+        role_filter = st.selectbox("Position group", role_options, index=0)
+        family_options = ["Overview", *list(CARD_GROUPS.keys())]
+        metric_family = st.selectbox("Metric family", family_options, index=0)
 
     mode = st.selectbox("Metric value", ["Raw", "Possession-adjusted"], index=1)
 
@@ -201,24 +284,33 @@ with st.sidebar:
     with value_col:
         st.markdown(f'<div class="minute-stepper-value">{min_minutes}</div>', unsafe_allow_html=True)
 
-pool = make_scope_pool(df, str(season), scope, selected_league, min_minutes)
-if role_filter != "All positions":
-    pool = pool[pool["Role bucket"].astype(str).eq(role_filter)].copy()
-reference_df = make_reference_for_pool(make_scope_pool(df, str(season), scope, selected_league, min_minutes), role_filter)
+pool_all = make_scope_pool(df, str(season), scope, selected_league, min_minutes)
+
+if is_gk:
+    pool = pool_all.copy()
+    reference_df = pool_all.copy()
+else:
+    pool = pool_all.copy()
+    if role_filter != "All positions":
+        pool = pool[pool["Role bucket"].astype(str).eq(role_filter)].copy()
+    reference_df = make_outfield_reference(pool_all, role_filter)
 
 if pool.empty or reference_df.empty:
     st.warning("Nessun giocatore disponibile con questi filtri.")
     st.stop()
 
 scope_label = selected_league if scope == "Single league" else scope
-role_label = role_filter
+role_label = "GK" if is_gk else role_filter
+page_title = "Goalkeeper Rankings" if is_gk else f"{html.escape(metric_family)} Rankings"
+
 st.markdown(
     f"""
     <div class="ranking-hero">
-      <div class="ranking-kicker">Ranking overview</div>
+      <div class="ranking-kicker">{'Goalkeeper ranking overview' if is_gk else 'Ranking overview'}</div>
       <div class="ranking-title">{html.escape(metric_family)} Rankings</div>
       <div class="ranking-subtitle">{html.escape(scope_label)} · {html.escape(str(season))} · {html.escape(role_label)} · min {min_minutes} minutes · {html.escape(mode)}</div>
       <div class="ranking-pill-row">
+        <span class="ranking-pill">{html.escape(dataset_type)}</span>
         <span class="ranking-pill">Pool n = {len(pool)}</span>
         <span class="ranking-pill">Reference n = {len(reference_df)}</span>
         <span class="ranking-pill">Top 5 visible</span>
@@ -235,7 +327,7 @@ if len(reference_df) < 20:
     )
 
 
-def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str = "#5FFFE0") -> None:
+def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str = "#5FFFE0", *, is_gk_panel: bool = False) -> None:
     safe_title = html.escape(title)
     panel_html = (
         f'<div class="ranking-panel" style="border-color:{color}38;">'
@@ -249,12 +341,17 @@ def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str =
         panel_html += '<div class="ranking-empty">No data available for this metric.</div>'
     else:
         for _, row in table.head(5).iterrows():
-            value = format_metric_value(row["_value"], fmt) if fmt != "overall" else f'{row["_value"]:.0f}'
+            if fmt == "overall":
+                value = f'{row["_value"]:.0f}'
+            else:
+                value = format_gk_metric_value(row["_value"], fmt) if is_gk_panel else format_metric_value(row["_value"], fmt)
+
             pct = row.get("_pct", np.nan)
             pct_txt = "—" if pd.isna(pct) or math.isnan(float(pct)) else f"{float(pct):.0f}"
             pct_col = pct_color(float(pct)) if not pd.isna(pct) else "#8EA2C6"
+            position = "GK" if is_gk_panel else safe_text(row.get("Position"))
             meta = (
-                f"{fmt_intish(row.get('Age'))}, {safe_text(row.get('Position'))}, "
+                f"{fmt_intish(row.get('Age'))}, {position}, "
                 f"{safe_text(row.get('Team'))} · {safe_text(row.get('League'))}"
             )
             panel_html += (
@@ -277,17 +374,30 @@ def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str =
     if not table.empty:
         with st.expander(f"EXPAND · {title}"):
             show = table.copy()
-            show["Value"] = show["_value"].apply(lambda v: f"{v:.0f}" if fmt == "overall" else format_metric_value(v, fmt))
+            if fmt == "overall":
+                show["Value"] = show["_value"].apply(lambda v: f"{v:.0f}")
+            else:
+                show["Value"] = show["_value"].apply(
+                    lambda v: format_gk_metric_value(v, fmt) if is_gk_panel else format_metric_value(v, fmt)
+                )
             show["Percentile"] = show["_pct"].apply(lambda v: "—" if pd.isna(v) else f"{v:.0f}")
+            if "Position" not in show.columns:
+                show["Position"] = "GK"
             cols = ["Rank", "Player", "Team", "League", "Age", "Position", "Minutes played", "Value", "Percentile"]
             st.dataframe(show[cols], use_container_width=True, hide_index=True)
 
 
-metrics_to_render = get_metrics_for_family(metric_family)
+if is_gk:
+    metrics_to_render = get_gk_metrics_for_family(metric_family)
+else:
+    metrics_to_render = get_outfield_metrics_for_family(metric_family)
 
 ranking_items: list[tuple[str, pd.DataFrame, str, str]] = []
-if role_filter != "All positions" and metric_family == "Overview":
-    ranking_items.append(("Overall role fit", rank_overall(pool, reference_df, role_filter, mode), "overall", "#5FFFE0"))
+
+if is_gk and metric_family == "Overview":
+    ranking_items.append(("GK Overall", rank_gk_overall(pool, reference_df, mode), "overall", "#5FFFE0"))
+elif (not is_gk) and role_filter != "All positions" and metric_family == "Overview":
+    ranking_items.append(("Overall role fit", rank_outfield_overall(pool, reference_df, role_filter, mode), "overall", "#5FFFE0"))
 
 for metric in metrics_to_render:
     key = metric_key(metric)
@@ -296,7 +406,7 @@ for metric in metrics_to_render:
     ranking_items.append(
         (
             metric_label(metric),
-            rank_metric(pool, reference_df, metric, mode),
+            rank_metric(pool, reference_df, metric, mode, is_gk=is_gk),
             metric_format(metric),
             "#5FFFE0",
         )
@@ -307,8 +417,9 @@ if not ranking_items:
 else:
     panel_cols = st.columns(2)
     for idx, (title, table, fmt, color) in enumerate(ranking_items):
-        # Use family color where possible
-        if metric_family in CARD_GROUPS:
+        if is_gk and metric_family in GK_CARD_GROUPS:
+            color = GK_CARD_GROUPS[metric_family].get("color", color)
+        elif (not is_gk) and metric_family in CARD_GROUPS:
             color = CARD_GROUPS[metric_family].get("color", color)
         with panel_cols[idx % 2]:
-            render_ranking_panel(title, table, fmt, color)
+            render_ranking_panel(title, table, fmt, color, is_gk_panel=is_gk)
