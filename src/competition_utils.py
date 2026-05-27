@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 
-# Exact Big Five definition. We use League + Nation because "Premier League"
-# is also used by non-English competitions in the dataset.
 BIG_FIVE_COMPETITIONS = {
     ("Serie A", "Italy"),
     ("Premier League", "England"),
