@@ -209,8 +209,13 @@ DISPLAY_LABELS = {
     "xG+xA/team": "xG+xA / match",
     "Goals - xG": "G - xG / match",
     "Goal overperformance %": "G - xG / match %",
-    "Goals total": "Goals total",
+    "Matches": "Matches",
+    "Goals total": "GF total",
+    "Goals against total": "GA total",
+    "Goal difference total": "GD total",
     "xG total": "xG total",
+    "xGA total": "xGA total",
+    "xGD total": "xGD total",
     "xA total": "xA total",
     "Goals - xG total": "G - xG total",
     "Goal overperformance total %": "G - xG total %",
@@ -279,7 +284,7 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
         parts.append(f'<div class="team-rank">{i}</div>')
         parts.append('<div>')
         parts.append(f'<div class="team-name">{html.escape(safe(row.get("Team")))}</div>')
-        parts.append(f'<div class="team-meta">G/match {format_metric_value("Goals", row.get("Goals"))} · xG/match {format_metric_value("xG/team", row.get("xG/team"))} · G-xG total {format_metric_value("Goals - xG total", row.get("Goals - xG total"))}</div>')
+        parts.append(f'<div class="team-meta">GF {format_metric_value("Goals total", row.get("Goals total"))} · GA {format_metric_value("Goals against total", row.get("Goals against total"))} · GD {format_metric_value("Goal difference total", row.get("Goal difference total"))}</div>')
         parts.append('</div>')
         parts.append(f'<div class="team-value" style="color:{color};">{score_text(value)}</div>')
         parts.append('</div>')
@@ -287,7 +292,7 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
     st.markdown("".join(parts), unsafe_allow_html=True)
 
     with st.expander(f"EXPAND · {display_label(metric)}"):
-        cols = ["Team", "Goals", "xG/team", "Goals - xG", "Goals total", "xG total", "Goals - xG total", "Expected Performance", "Effective Performance", "Performance Gap", metric]
+        cols = ["Team", "Goals", "xG/team", "Goals - xG", "Matches", "Goals total", "Goals against total", "Goal difference total", "xG total", "xGA total", "xGD total", "Goals - xG total", "Expected Performance", "Effective Performance", "Performance Gap", metric]
         cols = list(dict.fromkeys([c for c in cols if c in table.columns]))
         show = table.sort_values(metric, ascending=False).head(20).loc[:, cols].copy()
         for c in list(show.columns):
@@ -370,10 +375,16 @@ st.markdown(
   <div class="team-info-grid">
     <div class="team-info-box"><span class="team-info-label">Expected</span><span class="team-info-value">{score_text(team_row.get("Expected Performance"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">Effective</span><span class="team-info-value">{score_text(team_row.get("Effective Performance"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">Gap</span><span class="team-info-value">{score_text(team_row.get("Performance Gap"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">Goals / match</span><span class="team-info-value">{format_metric_value("Goals", team_row.get("Goals"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">xG / match</span><span class="team-info-value">{format_metric_value("xG/team", team_row.get("xG/team"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">Performance gap</span><span class="team-info-value">{score_text(team_row.get("Performance Gap"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">Matches</span><span class="team-info-value">{format_metric_value("Matches", team_row.get("Matches"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">GF total</span><span class="team-info-value">{format_metric_value("Goals total", team_row.get("Goals total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">GA total</span><span class="team-info-value">{format_metric_value("Goals against total", team_row.get("Goals against total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">GD total</span><span class="team-info-value">{format_metric_value("Goal difference total", team_row.get("Goal difference total"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">G - xG total</span><span class="team-info-value">{format_metric_value("Goals - xG total", team_row.get("Goals - xG total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">xG total</span><span class="team-info-value">{format_metric_value("xG total", team_row.get("xG total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">xGA total</span><span class="team-info-value">{format_metric_value("xGA total", team_row.get("xGA total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">xGD total</span><span class="team-info-value">{format_metric_value("xGD total", team_row.get("xGD total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">Goals / match</span><span class="team-info-value">{format_metric_value("Goals", team_row.get("Goals"))}</span></div>
   </div>
 </div>
     """,
@@ -416,12 +427,16 @@ with s3:
 plot_df = team_df.dropna(subset=[x_var, y_var]).copy()
 plot_df["hover_text"] = (
     plot_df["Team"].astype(str)
-    + "<br>Goals / match: "
-    + plot_df["Goals"].round(2).astype(str)
-    + "<br>xG / match: "
-    + plot_df["xG/team"].round(2).astype(str)
-    + "<br>G - xG total: "
-    + plot_df["Goals - xG total"].round(1).astype(str)
+    + "<br>GF total: "
+    + plot_df["Goals total"].round(1).astype(str)
+    + "<br>GA total: "
+    + plot_df["Goals against total"].round(1).astype(str)
+    + "<br>GD total: "
+    + plot_df["Goal difference total"].round(1).astype(str)
+    + "<br>xG total: "
+    + plot_df["xG total"].round(1).astype(str)
+    + "<br>xGA total: "
+    + plot_df["xGA total"].round(1).astype(str)
     + f"<br>{x_var}: "
     + plot_df[x_var].round(2).astype(str)
     + f"<br>{y_var}: "

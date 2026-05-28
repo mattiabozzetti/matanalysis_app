@@ -19,8 +19,13 @@ from .league_style import (
 BASE_METRICS: dict[str, dict[str, Any]] = {
     **LEAGUE_METRIC_SPECS,
     "Goals": {"column": "Goals", "fmt": "0.00", "adjustment": "on_ball", "higher_is_better": True},
+    "Matches": {"column": "Matches estimated", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "Goals total": {"column": "Goals total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
+    "Goals against total": {"column": "Goals against total", "fmt": "0.0", "adjustment": "none", "higher_is_better": False},
+    "Goal difference total": {"column": "Goal difference total", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "xG total": {"column": "xG total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
+    "xGA total": {"column": "xGA total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": False},
+    "xGD total": {"column": "xGD total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "xA total": {"column": "xA total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "Goals - xG": {"column": "Goals - xG", "fmt": "0.00", "adjustment": "none", "higher_is_better": True},
     "Goals - xG total": {"column": "Goals - xG total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
@@ -104,6 +109,8 @@ EXPECTED_COMPONENTS = [
 EFFECTIVE_COMPONENTS = [
     {"metric": "Goals", "higher_is_better": True},
     {"metric": "Goals total", "higher_is_better": True},
+    {"metric": "Goals against total", "higher_is_better": False},
+    {"metric": "Goal difference total", "higher_is_better": True},
     {"metric": "Goals - xG", "higher_is_better": True},
     {"metric": "Goals - xG total", "higher_is_better": True},
     {"metric": "Goal overperformance %", "higher_is_better": True},
@@ -137,9 +144,14 @@ CARD_GROUPS: dict[str, list[str]] = {
         "xG per shot",
     ],
     "Effective Performance": [
+        "Matches",
         "Goals",
         "Goals total",
+        "Goals against total",
+        "Goal difference total",
         "xG total",
+        "xGA total",
+        "xGD total",
         "Goals - xG",
         "Goals - xG total",
         "Goal overperformance %",
@@ -277,33 +289,25 @@ def _compute_total_goal_xg_from_players() -> pd.DataFrame:
 
 
 def _ensure_total_goal_xg_columns(df: pd.DataFrame) -> pd.DataFrame:
-    total_cols = [
-        "Goals total derived",
-        "xG total derived",
-        "xA total derived",
-        "Shots total derived",
-        "xG+xA total derived",
-        "Goals - xG total derived",
-        "Goal overperformance total %",
-    ]
+    # The committed processed file now contains standings-style totals.
+    # If Streamlit has an older cached file, we keep the columns if present;
+    # otherwise we fall back to player-derived totals and leave GA/GD blank.
+    if "Goals total derived" not in df.columns and "Goals total player derived" in df.columns:
+        df["Goals total derived"] = df["Goals total player derived"]
 
-    needs_totals = any(col not in df.columns for col in total_cols)
-    if not needs_totals and "xG total derived" in df.columns:
-        needs_totals = pd.to_numeric(df["xG total derived"], errors="coerce").isna().all()
+    if "Goals for total" in df.columns and "Goals total derived" not in df.columns:
+        df["Goals total derived"] = df["Goals for total"]
 
-    totals = _compute_total_goal_xg_from_players()
-    if totals.empty:
-        return df
+    if "Goals - xG total derived" not in df.columns and {"Goals total derived", "xG total derived"}.issubset(df.columns):
+        df["Goals - xG total derived"] = pd.to_numeric(df["Goals total derived"], errors="coerce") - pd.to_numeric(df["xG total derived"], errors="coerce")
 
-    # Merge totals even if columns already exist, because older cached/committed
-    # team_league_base files may not contain the total columns.
-    group_keys = ["Season", "League", "Nation", "Team"]
-    existing_cols = [c for c in total_cols if c in df.columns]
-    base = df.drop(columns=existing_cols, errors="ignore")
-    out = base.merge(totals, on=group_keys, how="left")
-
-    # If a few teams cannot be matched, keep visible NaN instead of failing.
-    return out
+    if "Goal overperformance total %" not in df.columns and {"Goals - xG total derived", "xG total derived"}.issubset(df.columns):
+        df["Goal overperformance total %"] = np.where(
+            pd.to_numeric(df["xG total derived"], errors="coerce").abs() > 1e-9,
+            pd.to_numeric(df["Goals - xG total derived"], errors="coerce") / pd.to_numeric(df["xG total derived"], errors="coerce"),
+            np.nan,
+        )
+    return df
 
 
 @st.cache_data(show_spinner="Carico Team Scouting...", ttl=0)
@@ -396,8 +400,13 @@ def table_columns() -> list[str]:
         "Goals",
         "xG/team",
         "Goals - xG",
+        "Matches",
         "Goals total",
+        "Goals against total",
+        "Goal difference total",
         "xG total",
+        "xGA total",
+        "xGD total",
         "Goals - xG total",
         "Expected Performance",
         "Effective Performance",
