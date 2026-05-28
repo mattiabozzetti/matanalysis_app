@@ -223,9 +223,105 @@ def format_metric_value(metric_name: str, value: float) -> str:
     return _format(value, spec.get("fmt", "0.00"))
 
 
-@st.cache_data(show_spinner="Carico Team Scouting...")
+def _coerce_team_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    protected = {"Season", "League", "Nation", "Team", "Competition"}
+    for col in df.columns:
+        if col not in protected:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _compute_total_goal_xg_from_players() -> pd.DataFrame:
+    root = Path(__file__).resolve().parents[1]
+    players_path = root / "data" / "processed" / "players_enriched.csv.gz"
+    if not players_path.exists():
+        return pd.DataFrame()
+
+    players = pd.read_csv(players_path, compression="gzip", low_memory=False)
+    required = {"Season", "League", "Nation", "Team", "Minutes played"}
+    if not required.issubset(players.columns):
+        return pd.DataFrame()
+
+    for col in ["Minutes played", "xG (expected goals)", "xA", "Goals", "Shots"]:
+        if col in players.columns:
+            players[col] = pd.to_numeric(players[col], errors="coerce")
+
+    group_keys = ["Season", "League", "Nation", "Team"]
+
+    def total_from_per90(g: pd.DataFrame, col: str) -> float:
+        if col not in g.columns:
+            return np.nan
+        return (pd.to_numeric(g[col], errors="coerce") * pd.to_numeric(g["Minutes played"], errors="coerce") / 90.0).sum(min_count=1)
+
+    rows = []
+    for keys, g in players.groupby(group_keys, dropna=False):
+        rec = dict(zip(group_keys, keys))
+        rec["Goals total derived"] = total_from_per90(g, "Goals")
+        rec["xG total derived"] = total_from_per90(g, "xG (expected goals)")
+        rec["xA total derived"] = total_from_per90(g, "xA")
+        rec["Shots total derived"] = total_from_per90(g, "Shots")
+        rows.append(rec)
+
+    totals = pd.DataFrame(rows)
+    if totals.empty:
+        return totals
+
+    totals["xG+xA total derived"] = totals["xG total derived"] + totals["xA total derived"]
+    totals["Goals - xG total derived"] = totals["Goals total derived"] - totals["xG total derived"]
+    totals["Goal overperformance total %"] = np.where(
+        totals["xG total derived"].abs() > 1e-9,
+        totals["Goals - xG total derived"] / totals["xG total derived"],
+        np.nan,
+    )
+    return totals
+
+
+def _ensure_total_goal_xg_columns(df: pd.DataFrame) -> pd.DataFrame:
+    total_cols = [
+        "Goals total derived",
+        "xG total derived",
+        "xA total derived",
+        "Shots total derived",
+        "xG+xA total derived",
+        "Goals - xG total derived",
+        "Goal overperformance total %",
+    ]
+
+    needs_totals = any(col not in df.columns for col in total_cols)
+    if not needs_totals and "xG total derived" in df.columns:
+        needs_totals = pd.to_numeric(df["xG total derived"], errors="coerce").isna().all()
+
+    totals = _compute_total_goal_xg_from_players()
+    if totals.empty:
+        return df
+
+    # Merge totals even if columns already exist, because older cached/committed
+    # team_league_base files may not contain the total columns.
+    group_keys = ["Season", "League", "Nation", "Team"]
+    existing_cols = [c for c in total_cols if c in df.columns]
+    base = df.drop(columns=existing_cols, errors="ignore")
+    out = base.merge(totals, on=group_keys, how="left")
+
+    # If a few teams cannot be matched, keep visible NaN instead of failing.
+    return out
+
+
+@st.cache_data(show_spinner="Carico Team Scouting...", ttl=0)
 def load_team_scouting_base() -> pd.DataFrame:
-    df = load_team_league_base()
+    # Direct read avoids stale cache from src.league_style.load_team_league_base().
+    root = Path(__file__).resolve().parents[1]
+    team_path = root / "data" / "processed" / "team_league_base.csv.gz"
+    if not team_path.exists():
+        df = load_team_league_base()
+    else:
+        df = pd.read_csv(team_path, compression="gzip", low_memory=False)
+
+    if "Competition" not in df.columns:
+        df["Competition"] = df["League"].astype(str) + " · " + df["Nation"].astype(str)
+
+    df = _coerce_team_numeric(df)
+    df = _ensure_total_goal_xg_columns(df)
+    df = _coerce_team_numeric(df)
     df = enrich_team_features(df)
     return df
 
