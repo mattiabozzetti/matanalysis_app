@@ -152,6 +152,81 @@ st.markdown(
 .league-bar-track {height:9px;border-radius:999px;background:rgba(255,255,255,0.10);overflow:hidden;}
 .league-bar-fill {height:100%;border-radius:999px;box-shadow:0 0 14px currentColor;}
 .league-metric-pct {font-size:0.78rem;font-weight:850;text-align:right;color:#F6F7FB;}
+
+.league-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(95,255,224,0.18);
+    border-radius: 18px;
+    background: rgba(10,16,36,0.78);
+    box-shadow: 0 14px 44px rgba(0,0,0,0.22);
+    margin-bottom: 1.2rem;
+}
+.league-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1180px;
+    color: #F6F7FB;
+    font-size: 0.86rem;
+}
+.league-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #10162B;
+    color: #AFC3E8;
+    text-align: left;
+    padding: 11px 10px;
+    font-size: 0.74rem;
+    font-weight: 950;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(95,255,224,0.18);
+}
+.league-table tbody td {
+    padding: 10px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+    background: rgba(16,22,43,0.72);
+}
+.league-table tbody tr:nth-child(even) td {
+    background: rgba(12,18,38,0.78);
+}
+.league-table tbody tr:hover td {
+    background: rgba(95,255,224,0.075);
+}
+.league-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 850;
+}
+.league-table .league-cell {
+    font-weight: 900;
+    color: #F6F7FB;
+    white-space: nowrap;
+}
+.league-table .reliability {
+    display: inline-flex;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(95,255,224,0.10);
+    border: 1px solid rgba(95,255,224,0.22);
+    color: #BFFFF4;
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+.league-table .score-pill {
+    display:inline-flex;
+    min-width:38px;
+    height:24px;
+    border-radius:999px;
+    align-items:center;
+    justify-content:center;
+    padding:0 8px;
+    background:rgba(95,255,224,0.08);
+    border:1px solid rgba(95,255,224,0.16);
+    font-weight:950;
+}
+
 @media (max-width:1100px) {
     .league-info-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
     .league-card-name {font-size:2.3rem;}
@@ -247,6 +322,48 @@ def render_bar(pct: float) -> str:
     return f'<div class="league-bar-track"><div class="league-bar-fill" style="width:{v:.0f}%;background:{color};color:{color};"></div></div>'
 
 
+def _dark_table(df: pd.DataFrame, numeric_score_cols: set[str] | None = None) -> str:
+    numeric_score_cols = numeric_score_cols or set()
+    parts = ['<div class="league-table-wrap"><table class="league-table">']
+    parts.append("<thead><tr>")
+    for col in df.columns:
+        parts.append(f"<th>{html.escape(str(col))}</th>")
+    parts.append("</tr></thead><tbody>")
+
+    for _, row in df.iterrows():
+        parts.append("<tr>")
+        for col in df.columns:
+            val = row[col]
+            if pd.isna(val):
+                txt_val = "—"
+            elif isinstance(val, (int, np.integer)):
+                txt_val = f"{int(val)}"
+            elif isinstance(val, (float, np.floating)):
+                txt_val = f"{float(val):.1f}"
+            else:
+                txt_val = str(val)
+
+            if col == "Competition":
+                cell = f'<td class="league-cell">{html.escape(txt_val)}</td>'
+            elif col == "Reliability":
+                cell = f'<td><span class="reliability">{html.escape(txt_val)}</span></td>'
+            elif col in numeric_score_cols:
+                try:
+                    color = pct_color(float(val))
+                except Exception:
+                    color = "#8EA2C6"
+                cell = f'<td class="num"><span class="score-pill" style="color:{color};">{html.escape(txt_val)}</span></td>'
+            elif isinstance(val, (int, float, np.integer, np.floating)) and not pd.isna(val):
+                cell = f'<td class="num">{html.escape(txt_val)}</td>'
+            else:
+                cell = f'<td>{html.escape(txt_val)}</td>'
+            parts.append(cell)
+        parts.append("</tr>")
+
+    parts.append("</tbody></table></div>")
+    return "".join(parts)
+
+
 def render_ranking_panel(index_name: str, table: pd.DataFrame):
     top = table.sort_values(index_name, ascending=False).head(5)
     parts = []
@@ -269,7 +386,7 @@ def render_ranking_panel(index_name: str, table: pd.DataFrame):
     with st.expander(f"EXPAND · {index_name}"):
         show = table.sort_values(index_name, ascending=False).head(20)[["Flag", "League", "Nation", "Teams", "Reliability", index_name]].copy()
         show[index_name] = show[index_name].round(1)
-        st.dataframe(show, use_container_width=True, hide_index=True)
+        st.markdown(_dark_table(show, {index_name}), unsafe_allow_html=True)
 
 
 # Hero
@@ -317,7 +434,8 @@ for c in table.columns:
     if c not in ["Flag", "Competition", "Reliability"]:
         if pd.api.types.is_numeric_dtype(table[c]):
             table[c] = table[c].round(1)
-st.dataframe(table.sort_values("Competition"), use_container_width=True, hide_index=True)
+score_cols = set([c for c in table.columns if c in INDEX_DEFINITIONS])
+st.markdown(_dark_table(table.sort_values("Competition"), score_cols), unsafe_allow_html=True)
 
 # League card
 st.markdown('<div class="league-section-title">League Card</div>', unsafe_allow_html=True)
@@ -384,8 +502,10 @@ with s2:
 with s3:
     highlight = st.selectbox("Highlight league", ["None", *league["Competition"].sort_values().tolist()], index=0)
 
-plot_df = league.copy()
-plot_df["Hover"] = (
+import plotly.graph_objects as go
+
+plot_df = league.dropna(subset=[x_var, y_var]).copy()
+plot_df["hover_text"] = (
     plot_df["Flag"].astype(str)
     + " "
     + plot_df["Competition"].astype(str)
@@ -393,43 +513,75 @@ plot_df["Hover"] = (
     + plot_df["Teams"].astype(int).astype(str)
     + "<br>Reliability: "
     + plot_df["Reliability"].astype(str)
+    + f"<br>{x_var}: "
+    + plot_df[x_var].round(2).astype(str)
+    + f"<br>{y_var}: "
+    + plot_df[y_var].round(2).astype(str)
 )
-plot_df["Highlight"] = np.where(plot_df["Competition"].eq(highlight), "Selected", "Other") if highlight != "None" else "League"
 
-fig = px.scatter(
-    plot_df,
-    x=x_var,
-    y=y_var,
-    size="Teams",
-    color="Highlight" if highlight != "None" else "Nation",
-    hover_name="Competition",
-    hover_data={
-        "Flag": True,
-        "Nation": True,
-        "Teams": True,
-        "Reliability": True,
-        x_var: ":.2f",
-        y_var: ":.2f",
-    },
+fig = go.Figure()
+
+base_df = plot_df.copy()
+selected_df = pd.DataFrame()
+if highlight != "None":
+    selected_df = plot_df[plot_df["Competition"].eq(highlight)].copy()
+    base_df = plot_df[~plot_df["Competition"].eq(highlight)].copy()
+
+fig.add_trace(
+    go.Scatter(
+        x=base_df[x_var],
+        y=base_df[y_var],
+        mode="markers",
+        text=base_df["hover_text"],
+        hovertemplate="%{text}<extra></extra>",
+        marker=dict(
+            size=np.clip(base_df["Teams"].astype(float) * 2.1, 14, 42),
+            color="rgba(16,22,43,0.84)",
+            line=dict(color="#5FFFE0", width=2.2),
+            opacity=0.88,
+        ),
+        name="Leagues",
+    )
+)
+
+if not selected_df.empty:
+    fig.add_trace(
+        go.Scatter(
+            x=selected_df[x_var],
+            y=selected_df[y_var],
+            mode="markers+text",
+            text=selected_df["Flag"],
+            textposition="middle center",
+            customdata=selected_df["hover_text"],
+            hovertemplate="%{customdata}<extra></extra>",
+            marker=dict(
+                size=np.clip(selected_df["Teams"].astype(float) * 2.6, 26, 54),
+                color="#5FFFE0",
+                line=dict(color="#070A18", width=3.2),
+                opacity=1.0,
+            ),
+            textfont=dict(color="#070A18", size=18),
+            name="Selected",
+        )
+    )
+
+fig.update_layout(
     template="plotly_dark",
     height=620,
-)
-fig.update_layout(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(10,16,36,0.45)",
     font=dict(color="#F6F7FB"),
     legend=dict(font=dict(color="#DDE8FF")),
     margin=dict(l=30, r=30, t=40, b=40),
+    xaxis=dict(
+        title=x_var,
+        gridcolor="rgba(255,255,255,0.10)",
+        zerolinecolor="rgba(255,255,255,0.12)",
+    ),
+    yaxis=dict(
+        title=y_var,
+        gridcolor="rgba(255,255,255,0.10)",
+        zerolinecolor="rgba(255,255,255,0.12)",
+    ),
 )
-fig.update_traces(marker=dict(line=dict(width=1, color="rgba(255,255,255,0.55)")), selector=dict(mode="markers"))
 st.plotly_chart(fig, use_container_width=True)
-
-with st.expander("Note metodologiche"):
-    st.markdown(
-        """
-        **Unità di analisi:** campionato × nazione × stagione.  
-        **Fonte principale:** Team Dataset aggregato per campionato.  
-        **Fonte integrativa:** Player Dataset per stimare xG/team e xA/team tramite media pesata sui minuti.  
-        **Bandiere:** per leggibilità sono mostrate in tooltip/card/tabelle; i marker restano pallini per evitare sovrapposizioni e perdita di leggibilità.
-        """
-    )
