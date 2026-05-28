@@ -201,6 +201,26 @@ def score_text(value):
         return "—"
     return f"{float(value):.0f}"
 
+
+DISPLAY_LABELS = {
+    "Goals": "Goals / match",
+    "xG/team": "xG / match",
+    "xA/team": "xA / match",
+    "xG+xA/team": "xG+xA / match",
+    "Goals - xG": "G - xG / match",
+    "Goal overperformance %": "G - xG / match %",
+    "Goals total": "Goals total",
+    "xG total": "xG total",
+    "xA total": "xA total",
+    "Goals - xG total": "G - xG total",
+    "Goal overperformance total %": "G - xG total %",
+}
+
+
+def display_label(name: str) -> str:
+    return DISPLAY_LABELS.get(str(name), str(name))
+
+
 def render_bar(pct: float) -> str:
     try:
         v = max(0, min(100, float(pct)))
@@ -213,7 +233,7 @@ def dark_table(table: pd.DataFrame, score_cols: set[str]) -> str:
     parts = ['<div class="team-table-wrap"><table class="team-table">']
     parts.append("<thead><tr>")
     for col in table.columns:
-        parts.append(f"<th>{html.escape(str(col))}</th>")
+        parts.append(f"<th>{html.escape(display_label(str(col)))}</th>")
     parts.append("</tr></thead><tbody>")
     for _, row in table.iterrows():
         parts.append("<tr>")
@@ -249,7 +269,7 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
     top = table.sort_values(metric, ascending=False).head(5)
     parts = ['<div class="team-ranking-panel">']
     parts.append('<div class="team-ranking-header">')
-    parts.append(f'<div class="team-ranking-title">{html.escape(metric)}</div>')
+    parts.append(f'<div class="team-ranking-title">{html.escape(display_label(metric))}</div>')
     parts.append('<div class="team-ranking-context">Top 5</div>')
     parts.append('</div>')
     for i, (_, row) in enumerate(top.iterrows(), start=1):
@@ -259,14 +279,14 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
         parts.append(f'<div class="team-rank">{i}</div>')
         parts.append('<div>')
         parts.append(f'<div class="team-name">{html.escape(safe(row.get("Team")))}</div>')
-        parts.append(f'<div class="team-meta">Goals {format_metric_value("Goals", row.get("Goals"))} · xG {format_metric_value("xG/team", row.get("xG/team"))} · Tot G-xG {format_metric_value("Goals - xG total", row.get("Goals - xG total"))}</div>')
+        parts.append(f'<div class="team-meta">G/match {format_metric_value("Goals", row.get("Goals"))} · xG/match {format_metric_value("xG/team", row.get("xG/team"))} · G-xG total {format_metric_value("Goals - xG total", row.get("Goals - xG total"))}</div>')
         parts.append('</div>')
         parts.append(f'<div class="team-value" style="color:{color};">{score_text(value)}</div>')
         parts.append('</div>')
     parts.append('</div>')
     st.markdown("".join(parts), unsafe_allow_html=True)
 
-    with st.expander(f"EXPAND · {metric}"):
+    with st.expander(f"EXPAND · {display_label(metric)}"):
         cols = ["Team", "Goals", "xG/team", "Goals - xG", "Goals total", "xG total", "Goals - xG total", "Expected Performance", "Effective Performance", "Performance Gap", metric]
         cols = list(dict.fromkeys([c for c in cols if c in table.columns]))
         show = table.sort_values(metric, ascending=False).head(20).loc[:, cols].copy()
@@ -351,9 +371,9 @@ st.markdown(
     <div class="team-info-box"><span class="team-info-label">Expected</span><span class="team-info-value">{score_text(team_row.get("Expected Performance"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">Effective</span><span class="team-info-value">{score_text(team_row.get("Effective Performance"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">Gap</span><span class="team-info-value">{score_text(team_row.get("Performance Gap"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">Goals p90</span><span class="team-info-value">{format_metric_value("Goals", team_row.get("Goals"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">xG/team</span><span class="team-info-value">{format_metric_value("xG/team", team_row.get("xG/team"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">Tot G-xG</span><span class="team-info-value">{format_metric_value("Goals - xG total", team_row.get("Goals - xG total"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">Goals / match</span><span class="team-info-value">{format_metric_value("Goals", team_row.get("Goals"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">xG / match</span><span class="team-info-value">{format_metric_value("xG/team", team_row.get("xG/team"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">G - xG total</span><span class="team-info-value">{format_metric_value("Goals - xG total", team_row.get("Goals - xG total"))}</span></div>
   </div>
 </div>
     """,
@@ -373,7 +393,7 @@ for i, (family, metrics) in enumerate(CARD_GROUPS.items()):
         pct = team_row.get(f"{metric} percentile", val if metric in STYLE_INDEX_COMPONENTS else np.nan)
         color = pct_color(pct) if not pd.isna(pct) else "#8EA2C6"
         parts.append('<div class="team-metric-row">')
-        parts.append(f'<div class="team-metric-label">{html.escape(metric)}</div>')
+        parts.append(f'<div class="team-metric-label">{html.escape(display_label(metric))}</div>')
         parts.append(f'<div class="team-metric-value">{html.escape(format_metric_value(metric, val))}</div>')
         parts.append(render_bar(pct))
         parts.append(f'<div class="team-metric-pct" style="color:{color};">{score_text(pct)}</div>')
@@ -387,20 +407,20 @@ st.markdown('<div class="team-section-title">Expected vs Effective / Scatter Lab
 variables = [v for v in scatter_variable_options() if v in team_df.columns]
 s1, s2, s3 = st.columns([1, 1, 1])
 with s1:
-    x_var = st.selectbox("X variable", variables, index=variables.index("Expected Performance") if "Expected Performance" in variables else 0)
+    x_var = st.selectbox("X variable", variables, index=variables.index("Expected Performance") if "Expected Performance" in variables else 0, format_func=display_label)
 with s2:
-    y_var = st.selectbox("Y variable", variables, index=variables.index("Effective Performance") if "Effective Performance" in variables else min(1, len(variables)-1))
+    y_var = st.selectbox("Y variable", variables, index=variables.index("Effective Performance") if "Effective Performance" in variables else min(1, len(variables)-1), format_func=display_label)
 with s3:
     highlight = st.selectbox("Highlight team", ["None", *team_df["Team"].sort_values().tolist()], index=0)
 
 plot_df = team_df.dropna(subset=[x_var, y_var]).copy()
 plot_df["hover_text"] = (
     plot_df["Team"].astype(str)
-    + "<br>Goals: "
+    + "<br>Goals / match: "
     + plot_df["Goals"].round(2).astype(str)
-    + "<br>xG/team: "
+    + "<br>xG / match: "
     + plot_df["xG/team"].round(2).astype(str)
-    + "<br>Total G-xG: "
+    + "<br>G - xG total: "
     + plot_df["Goals - xG total"].round(1).astype(str)
     + f"<br>{x_var}: "
     + plot_df[x_var].round(2).astype(str)
@@ -454,7 +474,7 @@ fig.update_layout(
     font=dict(color="#F6F7FB"),
     legend=dict(font=dict(color="#DDE8FF")),
     margin=dict(l=30, r=30, t=40, b=40),
-    xaxis=dict(title=x_var, gridcolor="rgba(255,255,255,0.10)", zerolinecolor="rgba(255,255,255,0.12)"),
-    yaxis=dict(title=y_var, gridcolor="rgba(255,255,255,0.10)", zerolinecolor="rgba(255,255,255,0.12)"),
+    xaxis=dict(title=display_label(x_var), gridcolor="rgba(255,255,255,0.10)", zerolinecolor="rgba(255,255,255,0.12)"),
+    yaxis=dict(title=display_label(y_var), gridcolor="rgba(255,255,255,0.10)", zerolinecolor="rgba(255,255,255,0.12)"),
 )
 st.plotly_chart(fig, use_container_width=True)
