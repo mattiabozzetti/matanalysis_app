@@ -272,7 +272,10 @@ def dark_table(table: pd.DataFrame, score_cols: set[str]) -> str:
             elif isinstance(val, (int, np.integer)):
                 txt = f"{int(val)}"
             elif isinstance(val, (float, np.floating)):
-                txt = f"{float(val):.1f}"
+                if col in {"Matches", "Goals total", "Goals against total", "Goal difference total"}:
+                    txt = f"{float(val):.0f}"
+                else:
+                    txt = f"{float(val):.1f}"
             else:
                 txt = str(val)
 
@@ -318,9 +321,11 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
         cols = ["Team", "Goals", "xG/team", "Goals - xG", "Matches", "Goals total", "Goals against total", "Goal difference total", "xG total", "xGA total", "xGD total", "Goals - xG total", "Expected Performance", "Effective Performance", "Performance Gap", metric]
         cols = list(dict.fromkeys([c for c in cols if c in table.columns]))
         show = table.sort_values(metric, ascending=False).head(20).loc[:, cols].copy()
+        integer_cols = {"Matches", "Goals total", "Goals against total", "Goal difference total"}
         for c in list(show.columns):
             if c != "Team":
-                show[c] = pd.to_numeric(show[c], errors="coerce").round(1)
+                num = pd.to_numeric(show[c], errors="coerce")
+                show[c] = num.round(0) if c in integer_cols else num.round(1)
         st.markdown(dark_table(show, {metric, "Expected Performance", "Effective Performance", "Performance Gap"}), unsafe_allow_html=True)
 
 
@@ -356,9 +361,8 @@ def render_style_index_panel(index_name: str, components: list[dict], selected_i
         val = team_row.get(metric)
         pct = component_percentile(team_df, metric, higher, selected_index)
         color = pct_color(pct) if not pd.isna(pct) else "#8EA2C6"
-        direction = "higher better" if higher else "lower better"
         parts.append('<div class="team-metric-row">')
-        parts.append(f'<div class="team-metric-label">{html.escape(display_label(metric))}<br><span style="color:#8EA2C6;font-size:0.70rem;">{direction}</span></div>')
+        parts.append(f'<div class="team-metric-label">{html.escape(display_label(metric))}</div>')
         parts.append(f'<div class="team-metric-value">{html.escape(format_metric_value(metric, val))}</div>')
         parts.append(render_bar(pct))
         parts.append(f'<div class="team-metric-pct" style="color:{color};">{score_text(pct)}</div>')
@@ -414,17 +418,6 @@ for i, metric in enumerate(rank_metrics):
     if metric in team_df.columns:
         with rank_cols[i % 3]:
             render_ranking_panel(metric, team_df)
-
-# Table
-st.markdown('<div class="team-section-title">All Teams Table</div>', unsafe_allow_html=True)
-cols = [c for c in table_columns() if c in team_df.columns]
-table = team_df[cols].copy()
-for c in table.columns:
-    if c != "Team":
-        if pd.api.types.is_numeric_dtype(table[c]):
-            table[c] = table[c].round(1)
-score_cols = {c for c in table.columns if c in ["Expected Performance", "Effective Performance", "Performance Gap", *STYLE_INDEX_COMPONENTS.keys()]}
-st.markdown(dark_table(table.sort_values("Effective Performance", ascending=False), score_cols), unsafe_allow_html=True)
 
 # Team Card
 st.markdown('<div class="team-section-title">Team Card</div>', unsafe_allow_html=True)
@@ -491,6 +484,18 @@ for i, (family, metrics) in enumerate(display_groups.items()):
     with card_cols[i % 2]:
         st.markdown("".join(parts), unsafe_allow_html=True)
 
+# Table
+st.markdown('<div class="team-section-title">All Teams Table</div>', unsafe_allow_html=True)
+cols = [c for c in table_columns() if c in team_df.columns]
+table = team_df[cols].copy()
+integer_cols = {"Matches", "Goals total", "Goals against total", "Goal difference total"}
+for c in table.columns:
+    if c != "Team":
+        if pd.api.types.is_numeric_dtype(table[c]):
+            table[c] = table[c].round(0) if c in integer_cols else table[c].round(1)
+score_cols = {c for c in table.columns if c in ["Expected Performance", "Effective Performance", "Performance Gap", *STYLE_INDEX_COMPONENTS.keys()]}
+st.markdown(dark_table(table.sort_values("Effective Performance", ascending=False), score_cols), unsafe_allow_html=True)
+
 # Scatter
 st.markdown('<div class="team-section-title">Expected vs Effective / Scatter Lab</div>', unsafe_allow_html=True)
 variables = [v for v in scatter_variable_options() if v in team_df.columns]
@@ -506,11 +511,11 @@ plot_df = team_df.dropna(subset=[x_var, y_var]).copy()
 plot_df["hover_text"] = (
     plot_df["Team"].astype(str)
     + "<br>GF total: "
-    + plot_df["Goals total"].round(1).astype(str)
+    + plot_df["Goals total"].round(0).astype("Int64").astype(str)
     + "<br>GA total: "
-    + plot_df["Goals against total"].round(1).astype(str)
+    + plot_df["Goals against total"].round(0).astype("Int64").astype(str)
     + "<br>GD total: "
-    + plot_df["Goal difference total"].round(1).astype(str)
+    + plot_df["Goal difference total"].round(0).astype("Int64").astype(str)
     + "<br>xG total: "
     + plot_df["xG total"].round(1).astype(str)
     + "<br>xGA total: "

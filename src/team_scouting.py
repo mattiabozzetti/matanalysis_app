@@ -19,10 +19,10 @@ from .league_style import (
 BASE_METRICS: dict[str, dict[str, Any]] = {
     **LEAGUE_METRIC_SPECS,
     "Goals": {"column": "Goals", "fmt": "0.00", "adjustment": "on_ball", "higher_is_better": True},
-    "Matches": {"column": "Matches estimated", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
-    "Goals total": {"column": "Goals total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
-    "Goals against total": {"column": "Goals against total", "fmt": "0.0", "adjustment": "none", "higher_is_better": False},
-    "Goal difference total": {"column": "Goal difference total", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
+    "Matches": {"column": "Matches estimated", "fmt": "0", "adjustment": "none", "higher_is_better": True},
+    "Goals total": {"column": "Goals total derived", "fmt": "0", "adjustment": "none", "higher_is_better": True},
+    "Goals against total": {"column": "Goals against total", "fmt": "0", "adjustment": "none", "higher_is_better": False},
+    "Goal difference total": {"column": "Goal difference total", "fmt": "0", "adjustment": "none", "higher_is_better": True},
     "xG total": {"column": "xG total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "xGA total": {"column": "xGA total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": False},
     "xGD total": {"column": "xGD total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
@@ -221,6 +221,8 @@ def _format(value: float, fmt: str = "0.00") -> str:
         return "—"
     if fmt == "%":
         return f"{float(value) * 100:.1f}%"
+    if fmt == "0":
+        return f"{float(value):.0f}"
     if fmt == "0.0":
         return f"{float(value):.1f}"
     if fmt == "0.00":
