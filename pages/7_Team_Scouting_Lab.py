@@ -259,7 +259,7 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
         parts.append(f'<div class="team-rank">{i}</div>')
         parts.append('<div>')
         parts.append(f'<div class="team-name">{html.escape(safe(row.get("Team")))}</div>')
-        parts.append(f'<div class="team-meta">Goals {format_metric_value("Goals", row.get("Goals"))} · xG {format_metric_value("xG/team", row.get("xG/team"))}</div>')
+        parts.append(f'<div class="team-meta">Goals {format_metric_value("Goals", row.get("Goals"))} · xG {format_metric_value("xG/team", row.get("xG/team"))} · Tot G-xG {format_metric_value("Goals - xG total", row.get("Goals - xG total"))}</div>')
         parts.append('</div>')
         parts.append(f'<div class="team-value" style="color:{color};">{score_text(value)}</div>')
         parts.append('</div>')
@@ -267,10 +267,10 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
     st.markdown("".join(parts), unsafe_allow_html=True)
 
     with st.expander(f"EXPAND · {metric}"):
-        cols = ["Team", "Goals", "xG/team", "Expected Performance", "Effective Performance", "Performance Gap", metric]
-        cols = [c for c in cols if c in table.columns]
-        show = table.sort_values(metric, ascending=False).head(20)[cols].copy()
-        for c in show.columns:
+        cols = ["Team", "Goals", "xG/team", "Goals - xG", "Goals total", "xG total", "Goals - xG total", "Expected Performance", "Effective Performance", "Performance Gap", metric]
+        cols = list(dict.fromkeys([c for c in cols if c in table.columns]))
+        show = table.sort_values(metric, ascending=False).head(20).loc[:, cols].copy()
+        for c in list(show.columns):
             if c != "Team":
                 show[c] = pd.to_numeric(show[c], errors="coerce").round(1)
         st.markdown(dark_table(show, {metric, "Expected Performance", "Effective Performance", "Performance Gap"}), unsafe_allow_html=True)
@@ -351,9 +351,9 @@ st.markdown(
     <div class="team-info-box"><span class="team-info-label">Expected</span><span class="team-info-value">{score_text(team_row.get("Expected Performance"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">Effective</span><span class="team-info-value">{score_text(team_row.get("Effective Performance"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">Gap</span><span class="team-info-value">{score_text(team_row.get("Performance Gap"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">Goals</span><span class="team-info-value">{format_metric_value("Goals", team_row.get("Goals"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">Goals p90</span><span class="team-info-value">{format_metric_value("Goals", team_row.get("Goals"))}</span></div>
     <div class="team-info-box"><span class="team-info-label">xG/team</span><span class="team-info-value">{format_metric_value("xG/team", team_row.get("xG/team"))}</span></div>
-    <div class="team-info-box"><span class="team-info-label">Possession</span><span class="team-info-value">{format_metric_value("Ball possession %", team_row.get("Ball possession %"))}</span></div>
+    <div class="team-info-box"><span class="team-info-label">Tot G-xG</span><span class="team-info-value">{format_metric_value("Goals - xG total", team_row.get("Goals - xG total"))}</span></div>
   </div>
 </div>
     """,
@@ -400,6 +400,8 @@ plot_df["hover_text"] = (
     + plot_df["Goals"].round(2).astype(str)
     + "<br>xG/team: "
     + plot_df["xG/team"].round(2).astype(str)
+    + "<br>Total G-xG: "
+    + plot_df["Goals - xG total"].round(1).astype(str)
     + f"<br>{x_var}: "
     + plot_df[x_var].round(2).astype(str)
     + f"<br>{y_var}: "

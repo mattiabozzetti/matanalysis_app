@@ -19,8 +19,13 @@ from .league_style import (
 BASE_METRICS: dict[str, dict[str, Any]] = {
     **LEAGUE_METRIC_SPECS,
     "Goals": {"column": "Goals", "fmt": "0.00", "adjustment": "on_ball", "higher_is_better": True},
+    "Goals total": {"column": "Goals total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
+    "xG total": {"column": "xG total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
+    "xA total": {"column": "xA total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "Goals - xG": {"column": "Goals - xG", "fmt": "0.00", "adjustment": "none", "higher_is_better": True},
+    "Goals - xG total": {"column": "Goals - xG total derived", "fmt": "0.0", "adjustment": "none", "higher_is_better": True},
     "Goal overperformance %": {"column": "Goal overperformance %", "fmt": "%", "adjustment": "none", "higher_is_better": True},
+    "Goal overperformance total %": {"column": "Goal overperformance total %", "fmt": "%", "adjustment": "none", "higher_is_better": True},
     "Goals per shot": {"column": "Goals per shot", "fmt": "%", "adjustment": "none", "higher_is_better": True},
     "Actions in box success %": {"column": "Actions in opponent's box successful, %", "fmt": "%", "adjustment": "none", "higher_is_better": True},
 }
@@ -98,8 +103,11 @@ EXPECTED_COMPONENTS = [
 
 EFFECTIVE_COMPONENTS = [
     {"metric": "Goals", "higher_is_better": True},
+    {"metric": "Goals total", "higher_is_better": True},
     {"metric": "Goals - xG", "higher_is_better": True},
+    {"metric": "Goals - xG total", "higher_is_better": True},
     {"metric": "Goal overperformance %", "higher_is_better": True},
+    {"metric": "Goal overperformance total %", "higher_is_better": True},
     {"metric": "Goals per shot", "higher_is_better": True},
     {"metric": "Shots on target %", "higher_is_better": True},
     {"metric": "Chances successful %", "higher_is_better": True},
@@ -130,8 +138,12 @@ CARD_GROUPS: dict[str, list[str]] = {
     ],
     "Effective Performance": [
         "Goals",
+        "Goals total",
+        "xG total",
         "Goals - xG",
+        "Goals - xG total",
         "Goal overperformance %",
+        "Goal overperformance total %",
         "Goals per shot",
         "Shots on target %",
         "Chances successful %",
@@ -245,6 +257,8 @@ def build_team_profiles(
     # Derived effective metrics.
     data["Goals - xG"] = pd.to_numeric(data.get("Goals"), errors="coerce") - pd.to_numeric(data.get("xG/team derived"), errors="coerce")
     data["Goal overperformance %"] = _safe_div(data["Goals - xG"], data.get("xG/team derived"))
+    data["Goals - xG total derived"] = pd.to_numeric(data.get("Goals - xG total derived"), errors="coerce")
+    data["Goal overperformance total %"] = pd.to_numeric(data.get("Goal overperformance total %"), errors="coerce")
     data["Goals per shot"] = _safe_div(data.get("Goals"), data.get("Shots"))
 
     # Selected metric values and percentiles inside selected league.
@@ -286,6 +300,9 @@ def table_columns() -> list[str]:
         "Goals",
         "xG/team",
         "Goals - xG",
+        "Goals total",
+        "xG total",
+        "Goals - xG total",
         "Expected Performance",
         "Effective Performance",
         "Performance Gap",
