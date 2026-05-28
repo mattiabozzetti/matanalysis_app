@@ -144,6 +144,29 @@ st.markdown(
     display:inline-flex;min-width:38px;height:24px;border-radius:999px;align-items:center;justify-content:center;padding:0 8px;
     background:rgba(95,255,224,0.08);border:1px solid rgba(95,255,224,0.16);font-weight:950;
 }
+
+.team-style-index-score {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:44px;
+    height:30px;
+    border-radius:999px;
+    padding:0 10px;
+    background:rgba(95,255,224,0.10);
+    border:1px solid rgba(95,255,224,0.28);
+    color:#5FFFE0;
+    font-weight:950;
+    font-size:0.88rem;
+}
+.team-style-index-note {
+    color:#8EA2C6;
+    font-size:0.78rem;
+    font-weight:750;
+    margin-top:-4px;
+    margin-bottom:10px;
+}
+
 @media (max-width:1100px) {
     .team-info-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
     .team-card-name {font-size:2.3rem;}
@@ -300,6 +323,51 @@ def render_ranking_panel(metric: str, table: pd.DataFrame):
                 show[c] = pd.to_numeric(show[c], errors="coerce").round(1)
         st.markdown(dark_table(show, {metric, "Expected Performance", "Effective Performance", "Performance Gap"}), unsafe_allow_html=True)
 
+
+def component_percentile(table: pd.DataFrame, metric: str, higher_is_better: bool, selected_index: int) -> float:
+    if metric not in table.columns:
+        return float("nan")
+    values = pd.to_numeric(table[metric], errors="coerce")
+    pct = values.rank(pct=True, method="average") * 100
+    if not higher_is_better:
+        pct = 100 - pct
+    try:
+        return float(pct.loc[selected_index])
+    except Exception:
+        return float("nan")
+
+
+def render_style_index_panel(index_name: str, components: list[dict], selected_index: int) -> str:
+    index_score = team_row.get(index_name, float("nan"))
+    color = pct_color(index_score) if not pd.isna(index_score) else "#8EA2C6"
+
+    parts = ['<div class="team-metric-panel">']
+    parts.append('<div class="team-metric-header">')
+    parts.append(f'<div class="team-metric-title">{html.escape(index_name)}</div>')
+    parts.append(f'<div class="team-style-index-score" style="color:{color};border-color:{color}80;">{score_text(index_score)}</div>')
+    parts.append('</div>')
+    parts.append('<div class="team-style-index-note">Composite score built from the component metrics below.</div>')
+
+    for component in components:
+        metric = component.get("metric")
+        if metric not in team_row.index:
+            continue
+        higher = bool(component.get("higher_is_better", True))
+        val = team_row.get(metric)
+        pct = component_percentile(team_df, metric, higher, selected_index)
+        color = pct_color(pct) if not pd.isna(pct) else "#8EA2C6"
+        direction = "higher better" if higher else "lower better"
+        parts.append('<div class="team-metric-row">')
+        parts.append(f'<div class="team-metric-label">{html.escape(display_label(metric))}<br><span style="color:#8EA2C6;font-size:0.70rem;">{direction}</span></div>')
+        parts.append(f'<div class="team-metric-value">{html.escape(format_metric_value(metric, val))}</div>')
+        parts.append(render_bar(pct))
+        parts.append(f'<div class="team-metric-pct" style="color:{color};">{score_text(pct)}</div>')
+        parts.append('</div>')
+
+    parts.append('</div>')
+    return "".join(parts)
+
+
 # Hero
 leaders = []
 for metric in ["Expected Performance", "Effective Performance", "Performance Gap", "Directness", "Control", "Pressing / Regain"]:
@@ -391,8 +459,18 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+selected_index = team_df.index[team_df["Team"].eq(selected_team)][0]
+
+st.markdown('<div class="team-section-title">Style Profile components</div>', unsafe_allow_html=True)
+style_cols = st.columns(2)
+for i, (index_name, components) in enumerate(STYLE_INDEX_COMPONENTS.items()):
+    with style_cols[i % 2]:
+        st.markdown(render_style_index_panel(index_name, components, selected_index), unsafe_allow_html=True)
+
+st.markdown('<div class="team-section-title">Performance and operational metrics</div>', unsafe_allow_html=True)
 card_cols = st.columns(2)
-for i, (family, metrics) in enumerate(CARD_GROUPS.items()):
+display_groups = {k: v for k, v in CARD_GROUPS.items() if k != "Style Profile"}
+for i, (family, metrics) in enumerate(display_groups.items()):
     parts = ['<div class="team-metric-panel">']
     parts.append('<div class="team-metric-header">')
     parts.append(f'<div class="team-metric-title">{html.escape(family)}</div>')
