@@ -15,6 +15,7 @@ TEAMS_RAW = RAW_DIR / "Team Dataset.xlsx"
 GK_RAW = RAW_DIR / "GK Dataset.xlsx"
 PLAYERS_PROCESSED = PROCESSED_DIR / "players_enriched.csv.gz"
 PLAYERS_CLUSTERED = PROCESSED_DIR / "players_enriched_with_clusters.csv.gz"
+CLUSTER_LABELS = PROCESSED_DIR / "style_cluster_labels.csv"
 
 
 @st.cache_data(show_spinner="Carico i dati giocatori...")
@@ -51,6 +52,7 @@ def load_players_enriched() -> pd.DataFrame:
     df = _coerce_numeric(df)
     df = _add_derived_columns(df)
     df = _add_role_bucket(df)
+    df = _apply_cluster_labels(df)
     return df
 
 
@@ -101,6 +103,47 @@ def _add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
 def _add_role_bucket(df: pd.DataFrame) -> pd.DataFrame:
     df = add_role_bucket(df)
     return df.loc[df["Position"].astype(str).ne("GK")].reset_index(drop=True)
+
+
+def _apply_cluster_labels(df: pd.DataFrame) -> pd.DataFrame:
+    """Overwrite cluster ids with FM-like labels.
+
+    Older builds may contain style_cluster_name_label columns due to a merge
+    suffix. The card reads style_cluster_name/style_cluster_short_label, so we
+    normalise the columns here at load time.
+    """
+    if "style_cluster_id" not in df.columns:
+        return df
+
+    out = df.copy()
+
+    for base_col in ["style_cluster_name", "style_cluster_short_label", "style_cluster_description"]:
+        label_col = f"{base_col}_label"
+        if label_col in out.columns:
+            if base_col not in out.columns:
+                out[base_col] = out[label_col]
+            else:
+                out[base_col] = out[base_col].where(out[base_col].notna(), out[label_col])
+
+    if CLUSTER_LABELS.exists():
+        labels = pd.read_csv(CLUSTER_LABELS)
+        keep = [c for c in ["style_cluster_id", "style_cluster_name", "style_cluster_short_label", "description"] if c in labels.columns]
+        labels = labels[keep].drop_duplicates("style_cluster_id")
+        if "description" in labels.columns:
+            labels = labels.rename(columns={"description": "style_cluster_description"})
+
+        out = out.drop(
+            columns=["style_cluster_name", "style_cluster_short_label", "style_cluster_description"],
+            errors="ignore",
+        )
+        out = out.merge(labels, on="style_cluster_id", how="left")
+
+    out = out.drop(
+        columns=["style_cluster_name_label", "style_cluster_short_label_label", "style_cluster_description_label"],
+        errors="ignore",
+    )
+
+    return out
 
 
 def available_seasons(df: pd.DataFrame) -> list[str]:
