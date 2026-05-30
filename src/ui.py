@@ -249,6 +249,34 @@ def inject_css() -> None:
             .hero-info-grid {grid-template-columns: repeat(2, minmax(0, 1fr));}
         }
 
+
+        /* NUMBER INPUT FIX: keep steppers and number inputs in dark/neon palette */
+        div[data-testid="stNumberInput"] input,
+        [data-testid="stSidebar"] div[data-testid="stNumberInput"] input {
+            background: #10162B !important;
+            color: #F6F7FB !important;
+            border: 1px solid rgba(95,255,224,0.38) !important;
+            border-radius: 14px !important;
+            box-shadow: none !important;
+        }
+        div[data-testid="stNumberInput"] button,
+        [data-testid="stSidebar"] div[data-testid="stNumberInput"] button {
+            background: #10162B !important;
+            color: #DDE8FF !important;
+            border-color: rgba(95,255,224,0.32) !important;
+        }
+        div[data-testid="stNumberInput"] button:hover,
+        [data-testid="stSidebar"] div[data-testid="stNumberInput"] button:hover {
+            background: rgba(95,255,224,0.12) !important;
+            color: #5FFFE0 !important;
+            border-color: rgba(95,255,224,0.55) !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] {
+            background: rgba(16,22,43,0.56) !important;
+            border: 1px solid rgba(95,255,224,0.18) !important;
+            border-radius: 18px !important;
+        }
+
         /* RADIO FIX: keep the dark palette but make the selected dot visible */
         input[type="radio"] {
             accent-color: #5FFFE0 !important;

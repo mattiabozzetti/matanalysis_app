@@ -296,9 +296,9 @@ with st.sidebar:
     st.markdown("### Age filter")
     age_min, age_max = st.columns(2)
     with age_min:
-        min_age = st.number_input("Min age", min_value=14, max_value=45, value=16, step=1)
+        min_age = st.number_input("Min age", min_value=14, max_value=45, value=16, step=1, key="similarity_min_age")
     with age_max:
-        max_age = st.number_input("Max age", min_value=14, max_value=45, value=40, step=1)
+        max_age = st.number_input("Max age", min_value=14, max_value=45, value=40, step=1, key="similarity_max_age")
 
     if max_age < min_age:
         st.warning("Max age deve essere ≥ Min age.")
@@ -458,9 +458,10 @@ def render_result_table(table: pd.DataFrame) -> None:
     for _, row in table.iterrows():
         fit = row.get("Fit Index", np.nan)
         fit_txt = "—" if pd.isna(fit) else f"{float(fit):.0f}"
+        cluster = txt(row.get("style_cluster_short_label"), txt(row.get("style_cluster_name"), txt(row.get("style_cluster_id"), "Unclustered")))
         meta = (
             f"{fmt_intish(row.get('Age'))}, {txt(row.get('Position'))}, "
-            f"{txt(row.get('Team'))} · {txt(row.get('League'))}"
+            f"{txt(row.get('Team'))} · {txt(row.get('League'))} · {cluster}"
         )
         html_out += (
             '<div class="sim-row">'

@@ -199,15 +199,6 @@ cluster_cards(profile_df)
 cluster_options = profile_df["style_cluster_id"].tolist()
 selected_cluster = st.selectbox("Cluster detail", cluster_options, format_func=lambda x: f"{x} · {profile_df.loc[profile_df['style_cluster_id'].eq(x), 'style_cluster_name'].iloc[0]}")
 
-st.markdown('<div class="arch-section-title">Metric profile</div>', unsafe_allow_html=True)
-detail_metrics = metric_df[metric_df["style_cluster_id"].eq(selected_cluster)].copy()
-if not detail_metrics.empty:
-    detail_metrics["abs_z"] = detail_metrics["z_difference"].abs()
-    show_metrics = detail_metrics.sort_values("abs_z", ascending=False).head(24)[
-        ["metric", "cluster_median", "role_median", "difference", "z_difference", "coverage"]
-    ].copy()
-    st.markdown(dark_table(show_metrics), unsafe_allow_html=True)
-
 st.markdown('<div class="arch-section-title">Cluster map</div>', unsafe_allow_html=True)
 if not player_df.empty and {"style_cluster_x", "style_cluster_y"}.issubset(player_df.columns):
     plot_df = player_df.dropna(subset=["style_cluster_x", "style_cluster_y", "style_cluster_id"]).copy()
@@ -242,14 +233,3 @@ if not player_df.empty and {"style_cluster_x", "style_cluster_y"}.issubset(playe
     st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("Coordinate cluster non disponibili.")
-
-st.markdown('<div class="arch-section-title">Players in selected cluster</div>', unsafe_allow_html=True)
-if not player_df.empty:
-    sub = player_df[player_df["style_cluster_id"].astype(str).eq(str(selected_cluster))].copy()
-    if not sub.empty:
-        cols = [c for c in ["Player", "Team", "League", "Nation", "Season", "Age", "Minutes played", "style_cluster_confidence"] if c in sub.columns]
-        show = sub.sort_values("style_cluster_confidence", ascending=False).head(120)[cols].copy()
-        show = show.rename(columns={"style_cluster_confidence": "confidence"})
-        st.markdown(dark_table(show, {"confidence"}), unsafe_allow_html=True)
-    else:
-        st.info("Nessun giocatore assegnato a questo cluster nel file corrente.")

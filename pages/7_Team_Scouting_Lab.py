@@ -8,8 +8,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from src.data_loader import load_players_enriched
+from src.gk_data_loader import load_gk_enriched
+
 from src.export_utils import render_export_png_button
 from src.team_scouting import (
+    BASE_METRICS,
     CARD_GROUPS,
     STYLE_INDEX_COMPONENTS,
     available_competitions,
@@ -116,7 +120,7 @@ st.markdown(
 }
 .team-metric-title {color:#5FFFE0;font-size:1.05rem;font-weight:950;letter-spacing:0.08em;text-transform:uppercase;}
 .team-metric-row {
-    display:grid;grid-template-columns:1.40fr 0.60fr 2fr 0.42fr;
+    display:grid;grid-template-columns:1.32fr 0.58fr 1.85fr 0.58fr;
     align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.055);
 }
 .team-metric-row:last-child {border-bottom:0;}
@@ -165,6 +169,71 @@ st.markdown(
     font-weight:750;
     margin-top:-4px;
     margin-bottom:10px;
+}
+
+
+.team-metric-scorebox {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    line-height:1.05;
+}
+.team-metric-rank {
+    color:#8EA2C6;
+    font-size:0.62rem;
+    font-weight:850;
+    margin-top:3px;
+    white-space:nowrap;
+}
+.cluster-composition-wrap {
+    border:1px solid rgba(95,255,224,0.18);
+    border-radius:22px;
+    background:rgba(10,16,36,0.72);
+    box-shadow:0 14px 44px rgba(0,0,0,0.22);
+    overflow:hidden;
+    margin-bottom:1.4rem;
+}
+.cluster-composition-grid {
+    display:grid;
+    grid-template-columns: 1.15fr 0.55fr 0.75fr 1fr 1fr 0.5fr;
+    gap:0;
+}
+.cluster-composition-head,
+.cluster-composition-row {
+    display:contents;
+}
+.cluster-composition-head > div {
+    background:#10162B;
+    color:#AFC3E8;
+    padding:11px 12px;
+    font-size:0.72rem;
+    font-weight:950;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    border-bottom:1px solid rgba(95,255,224,0.18);
+}
+.cluster-composition-row > div {
+    color:#DDE8FF;
+    background:rgba(16,22,43,0.70);
+    padding:10px 12px;
+    border-bottom:1px solid rgba(255,255,255,0.055);
+    font-size:0.82rem;
+    font-weight:750;
+}
+.cluster-composition-row:nth-child(even) > div {background:rgba(12,18,38,0.78);}
+.cluster-composition-player {color:#F6F7FB !important;font-weight:950 !important;}
+.cluster-pill {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px 9px;
+    min-height:24px;
+    border-radius:999px;
+    border:1px solid rgba(95,255,224,0.25);
+    background:rgba(95,255,224,0.08);
+    color:#5FFFE0;
+    font-weight:950;
+    font-size:0.74rem;
 }
 
 @media (max-width:1100px) {
@@ -342,6 +411,34 @@ def component_percentile(table: pd.DataFrame, metric: str, higher_is_better: boo
         return float("nan")
 
 
+def metric_higher_is_better(metric: str) -> bool:
+    spec = BASE_METRICS.get(metric, {})
+    return bool(spec.get("higher_is_better", True))
+
+
+def metric_rank_label(table: pd.DataFrame, metric: str, selected_index: int, *, higher_is_better: bool | None = None) -> str:
+    if metric not in table.columns:
+        return "—"
+    values = pd.to_numeric(table[metric], errors="coerce")
+    valid = values.dropna()
+    if valid.empty or selected_index not in values.index or pd.isna(values.loc[selected_index]):
+        return "—"
+    if higher_is_better is None:
+        higher_is_better = metric_higher_is_better(metric)
+    rank = values.rank(ascending=not higher_is_better, method="min").loc[selected_index]
+    return f"{int(rank)}/{int(valid.shape[0])}"
+
+
+def metric_scorebox(pct: float, rank_label: str) -> str:
+    color = pct_color(pct) if not pd.isna(pct) else "#8EA2C6"
+    return (
+        '<div class="team-metric-scorebox">'
+        f'<div class="team-metric-pct" style="color:{color};">{score_text(pct)}</div>'
+        f'<div class="team-metric-rank">{html.escape(rank_label)}</div>'
+        '</div>'
+    )
+
+
 def render_style_index_panel(index_name: str, components: list[dict], selected_index: int) -> str:
     index_score = team_row.get(index_name, float("nan"))
     color = pct_color(index_score) if not pd.isna(index_score) else "#8EA2C6"
@@ -360,12 +457,12 @@ def render_style_index_panel(index_name: str, components: list[dict], selected_i
         higher = bool(component.get("higher_is_better", True))
         val = team_row.get(metric)
         pct = component_percentile(team_df, metric, higher, selected_index)
-        color = pct_color(pct) if not pd.isna(pct) else "#8EA2C6"
+        rank_label = metric_rank_label(team_df, metric, selected_index, higher_is_better=higher)
         parts.append('<div class="team-metric-row">')
         parts.append(f'<div class="team-metric-label">{html.escape(display_label(metric))}</div>')
         parts.append(f'<div class="team-metric-value">{html.escape(format_metric_value(metric, val))}</div>')
         parts.append(render_bar(pct))
-        parts.append(f'<div class="team-metric-pct" style="color:{color};">{score_text(pct)}</div>')
+        parts.append(metric_scorebox(pct, rank_label))
         parts.append('</div>')
 
     parts.append('</div>')
@@ -473,28 +570,87 @@ for i, (family, metrics) in enumerate(display_groups.items()):
             continue
         val = team_row.get(metric)
         pct = team_row.get(f"{metric} percentile", val if metric in STYLE_INDEX_COMPONENTS else np.nan)
-        color = pct_color(pct) if not pd.isna(pct) else "#8EA2C6"
+        rank_label = metric_rank_label(team_df, metric, selected_index)
         parts.append('<div class="team-metric-row">')
         parts.append(f'<div class="team-metric-label">{html.escape(display_label(metric))}</div>')
         parts.append(f'<div class="team-metric-value">{html.escape(format_metric_value(metric, val))}</div>')
         parts.append(render_bar(pct))
-        parts.append(f'<div class="team-metric-pct" style="color:{color};">{score_text(pct)}</div>')
+        parts.append(metric_scorebox(pct, rank_label))
         parts.append('</div>')
     parts.append('</div>')
     with card_cols[i % 2]:
         st.markdown("".join(parts), unsafe_allow_html=True)
 
-# Table
-st.markdown('<div class="team-section-title">All Teams Table</div>', unsafe_allow_html=True)
-cols = [c for c in table_columns() if c in team_df.columns]
-table = team_df[cols].copy()
-integer_cols = {"Matches", "Goals total", "Goals against total", "Goal difference total"}
-for c in table.columns:
-    if c != "Team":
-        if pd.api.types.is_numeric_dtype(table[c]):
-            table[c] = table[c].round(0) if c in integer_cols else table[c].round(1)
-score_cols = {c for c in table.columns if c in ["Expected Performance", "Effective Performance", "Performance Gap", *STYLE_INDEX_COMPONENTS.keys()]}
-st.markdown(dark_table(table.sort_values("Effective Performance", ascending=False), score_cols), unsafe_allow_html=True)
+# Squad / cluster composition
+st.markdown('<div class="team-section-title">Cluster composition</div>', unsafe_allow_html=True)
+
+def cluster_text(value, fallback="Unclustered"):
+    if pd.isna(value):
+        return fallback
+    value = str(value)
+    return fallback if value in {"", "nan", "None"} else value
+
+def render_cluster_composition(selected_team: str, selected_season: str) -> None:
+    try:
+        outfield = load_players_enriched()
+    except Exception:
+        outfield = pd.DataFrame()
+    try:
+        gk = load_gk_enriched()
+    except Exception:
+        gk = pd.DataFrame()
+
+    frames = []
+    if not outfield.empty:
+        tmp = outfield[
+            outfield["Season"].astype(str).eq(str(selected_season))
+            & outfield["Team"].astype(str).eq(str(selected_team))
+        ].copy()
+        if not tmp.empty:
+            tmp["Unit"] = tmp.get("Role bucket", "OUT")
+            frames.append(tmp)
+
+    if not gk.empty:
+        tmp = gk[
+            gk["Season"].astype(str).eq(str(selected_season))
+            & gk["Team"].astype(str).eq(str(selected_team))
+        ].copy()
+        if not tmp.empty:
+            tmp["Role bucket"] = "GK"
+            tmp["Position"] = "GK"
+            tmp["Unit"] = "GK"
+            frames.append(tmp)
+
+    if not frames:
+        st.info("Nessuna composizione cluster disponibile per questa squadra.")
+        return
+
+    squad = pd.concat(frames, ignore_index=True, sort=False)
+    squad["Minutes_sort"] = pd.to_numeric(squad.get("Minutes played"), errors="coerce").fillna(0)
+    squad = squad.sort_values(["Unit", "Minutes_sort"], ascending=[True, False])
+
+    parts = ['<div class="cluster-composition-wrap"><div class="cluster-composition-grid">']
+    for h in ["Player", "Pos", "Role", "Archetype", "Cluster", "Min"]:
+        parts.append(f'<div class="cluster-composition-head"><div>{h}</div></div>')
+    for _, row in squad.iterrows():
+        player_name = safe(row.get("Player"))
+        pos = safe(row.get("Position"))
+        role = safe(row.get("Role bucket"))
+        archetype = cluster_text(row.get("style_cluster_short_label"), cluster_text(row.get("style_cluster_name")))
+        cluster_id = cluster_text(row.get("style_cluster_id"), "—")
+        mins = format_metric_value("Matches", row.get("Minutes played"))
+        parts.append('<div class="cluster-composition-row">')
+        parts.append(f'<div class="cluster-composition-player">{html.escape(player_name)}</div>')
+        parts.append(f'<div>{html.escape(pos)}</div>')
+        parts.append(f'<div>{html.escape(role)}</div>')
+        parts.append(f'<div><span class="cluster-pill">{html.escape(archetype)}</span></div>')
+        parts.append(f'<div>{html.escape(cluster_id)}</div>')
+        parts.append(f'<div>{html.escape(mins)}</div>')
+        parts.append('</div>')
+    parts.append('</div></div>')
+    st.markdown("".join(parts), unsafe_allow_html=True)
+
+render_cluster_composition(selected_team, season)
 
 # Scatter
 st.markdown('<div class="team-section-title">Expected vs Effective / Scatter Lab</div>', unsafe_allow_html=True)
