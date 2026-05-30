@@ -152,11 +152,11 @@ season_tag = fmt_text(player.get("Season"))
 player_pos = fmt_text(player.get("Position"))
 possession = player.get("Ball possession, %")
 possession_txt = "—" if pd.isna(possession) else f"{float(possession)*100:.1f}%"
+cluster_id = fmt_text(player.get("style_cluster_id"), "—")
 cluster_name = fmt_text(player.get("style_cluster_name"), "Unclustered")
 cluster_short = fmt_text(player.get("style_cluster_short_label"), cluster_name)
 if cluster_short == "Unclustered" and cluster_id not in {"—", "nan", "None"}:
     cluster_short = cluster_id
-cluster_id = fmt_text(player.get("style_cluster_id"), "—")
 cluster_conf = player.get("style_cluster_confidence")
 cluster_conf_txt = "—" if pd.isna(cluster_conf) else f"{float(cluster_conf):.0f}%"
 
