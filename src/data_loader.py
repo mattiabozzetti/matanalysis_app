@@ -14,6 +14,7 @@ PLAYERS_RAW = RAW_DIR / "Players Dataset.xlsx"
 TEAMS_RAW = RAW_DIR / "Team Dataset.xlsx"
 GK_RAW = RAW_DIR / "GK Dataset.xlsx"
 PLAYERS_PROCESSED = PROCESSED_DIR / "players_enriched.csv.gz"
+PLAYERS_CLUSTERED = PROCESSED_DIR / "players_enriched_with_clusters.csv.gz"
 
 
 @st.cache_data(show_spinner="Carico i dati giocatori...")
@@ -24,7 +25,9 @@ def load_players_enriched() -> pd.DataFrame:
     If it is missing locally, the function can still rebuild from raw Excel files
     when ``src.preprocessing`` and the raw files are available.
     """
-    if PLAYERS_PROCESSED.exists():
+    if PLAYERS_CLUSTERED.exists():
+        df = pd.read_csv(PLAYERS_CLUSTERED, compression="gzip", low_memory=False)
+    elif PLAYERS_PROCESSED.exists():
         df = pd.read_csv(PLAYERS_PROCESSED, compression="gzip", low_memory=False)
     else:
         try:

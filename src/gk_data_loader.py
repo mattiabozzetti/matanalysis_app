@@ -8,16 +8,20 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 PROCESSED_DIR = ROOT / "data" / "processed"
 GK_PROCESSED = PROCESSED_DIR / "gk_enriched.csv.gz"
+GK_CLUSTERED = PROCESSED_DIR / "gk_enriched_with_clusters.csv.gz"
 
 
 @st.cache_data(show_spinner="Carico i dati portieri...")
 def load_gk_enriched() -> pd.DataFrame:
-    if not GK_PROCESSED.exists():
+    if GK_CLUSTERED.exists():
+        df = pd.read_csv(GK_CLUSTERED, compression="gzip", low_memory=False)
+    elif not GK_PROCESSED.exists():
         raise FileNotFoundError(
             "Missing data/processed/gk_enriched.csv.gz. "
             "Commit the processed goalkeeper file before deploying the GK module."
         )
-    df = pd.read_csv(GK_PROCESSED, compression="gzip", low_memory=False)
+    if not GK_CLUSTERED.exists():
+        df = pd.read_csv(GK_PROCESSED, compression="gzip", low_memory=False)
     df = _coerce_numeric(df)
     return df[df["team_context_available"].fillna(True).astype(bool)].reset_index(drop=True)
 

@@ -137,6 +137,11 @@ minutes_txt = fmt_intish(player.get("Minutes played"))
 season_tag = fmt_text(player.get("Season"))
 possession = player.get("Ball possession, %")
 possession_txt = "—" if pd.isna(possession) else f"{float(possession)*100:.1f}%"
+cluster_name = fmt_text(player.get("style_cluster_name"), "Unclustered")
+cluster_short = fmt_text(player.get("style_cluster_short_label"), cluster_name)
+cluster_id = fmt_text(player.get("style_cluster_id"), "—")
+cluster_conf = player.get("style_cluster_confidence")
+cluster_conf_txt = "—" if pd.isna(cluster_conf) else f"{float(cluster_conf):.0f}%"
 
 left, right = st.columns([5, 1.15], vertical_alignment="center")
 with left:
@@ -155,8 +160,9 @@ with left:
             <div class="hero-info-box"><span class="hero-info-label">AGE</span><span class="hero-info-value">{age}</span></div>
             <div class="hero-info-box"><span class="hero-info-label">HEIGHT</span><span class="hero-info-value">{height}</span></div>
             <div class="hero-info-box"><span class="hero-info-label">MINUTES</span><span class="hero-info-value">{minutes_txt}</span></div>
+            <div class="hero-info-box"><span class="hero-info-label">ARCHETYPE</span><span class="hero-info-value">{cluster_short}</span></div>
           </div>
-          <div class="hero-context-line">Percentile vs GK · {reference_scope} · reference n = {len(reference_df)} · {mode} · team possession = {possession_txt}</div>
+          <div class="hero-context-line">Percentile vs GK · {reference_scope} · reference n = {len(reference_df)} · {mode} · team possession = {possession_txt} · style cluster = {cluster_id} · confidence = {cluster_conf_txt}</div>
         </div>
         """,
         unsafe_allow_html=True,

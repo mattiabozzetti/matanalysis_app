@@ -1,0 +1,23 @@
+[
+  {
+    "role_bucket":"GK",
+    "style_cluster_id":"GK_C01",
+    "style_cluster_name":"Commanding Goalkeeper",
+    "style_cluster_short_label":"Commanding GK",
+    "description":"Area-commanding goalkeeper with high cross\/interception activity and strong handling profile; lower involvement in open-play build-up."
+  },
+  {
+    "role_bucket":"GK",
+    "style_cluster_id":"GK_C02",
+    "style_cluster_name":"Traditional Shot-Stopper",
+    "style_cluster_short_label":"Shot-Stopper",
+    "description":"Traditional goalkeeper profile with longer distribution, higher shot workload and less short build-up involvement."
+  },
+  {
+    "role_bucket":"GK",
+    "style_cluster_id":"GK_C03",
+    "style_cluster_name":"Sweeper Keeper",
+    "style_cluster_short_label":"Sweeper Keeper",
+    "description":"Modern build-up goalkeeper with stronger open-play passing, short\/medium distribution and sweeper involvement."
+  }
+]

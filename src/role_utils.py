@@ -2,10 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 
-# Central role taxonomy used by all outfield pages.
-# AM and W are intentionally separated:
-# - AM = central attacking midfielders / half-space creators.
-# - W  = wide attacking midfielders / wingers.
 ROLE_BUCKETS: dict[str, list[str]] = {
     "CB": ["CB", "LCB", "RCB"],
     "FB": ["LB", "RB", "LWB", "RWB"],
@@ -13,15 +9,6 @@ ROLE_BUCKETS: dict[str, list[str]] = {
     "AM": ["CAM", "LCAM", "RCAM"],
     "W": ["LAM", "RAM", "LM", "RM", "LW", "RW"],
     "FW": ["CF", "LCF", "RCF", "ST", "SS"],
-}
-
-ROLE_LABELS: dict[str, str] = {
-    "CB": "CENTRE BACK",
-    "FB": "FULL BACK",
-    "MF": "MIDFIELDER",
-    "AM": "ATTACKING MID",
-    "W": "WINGER",
-    "FW": "FORWARD",
 }
 
 POSITION_TO_BUCKET: dict[str, str] = {
@@ -44,9 +31,3 @@ def add_role_bucket(df: pd.DataFrame, position_col: str = "Position") -> pd.Data
         return out
     out["Role bucket"] = out[position_col].apply(role_bucket_for_position)
     return out
-
-
-def role_label(role_bucket: object) -> str:
-    if pd.isna(role_bucket):
-        return "UNKNOWN"
-    return ROLE_LABELS.get(str(role_bucket), str(role_bucket).upper())

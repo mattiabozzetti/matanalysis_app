@@ -1,2 +1,1 @@
-am_w_split_v2_flat
-Role buckets: CB, FB, MF, AM, W, FW, GK
+clusters_v1_style_archetypes
