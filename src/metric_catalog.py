@@ -15,18 +15,13 @@ from dataclasses import dataclass
 from math import exp
 from typing import Literal
 
+from .role_utils import ROLE_BUCKETS
+
 Adjustment = Literal["on_ball", "off_ball", "none"]
 MetricKind = Literal["volume", "quality", "negative", "derived"]
 
 BIG_FIVE_LEAGUES = ["Serie A", "Premier League", "La Liga", "Bundesliga", "Ligue 1"]
 
-ROLE_BUCKETS = {
-    "CB": ["CB", "LCB", "RCB"],
-    "FB": ["LB", "RB", "LWB", "RWB"],
-    "MF": ["CDM", "LDM", "RDM", "LCDM", "RCDM", "CM", "LCM", "RCM"],
-    "AM/W": ["CAM", "LCAM", "RCAM", "LAM", "RAM", "LM", "RM", "LW", "RW"],
-    "FW": ["CF", "LCF", "RCF", "ST", "SS"],
-}
 
 ROLE_WEIGHTS = {
     "CB": {
@@ -56,14 +51,23 @@ ROLE_WEIGHTS = {
         "Ball Security": 0.10,
         "Final Product": 0.05,
     },
-    "AM/W": {
-        "Final Product": 0.25,
-        "Creation": 0.20,
+    "AM": {
+        "Creation": 0.25,
+        "Final Product": 0.20,
         "Progression": 0.20,
-        "Dribbling": 0.15,
-        "Receiving": 0.10,
+        "Receiving": 0.15,
+        "Dribbling": 0.10,
         "Passing Accuracy": 0.05,
-        "Active Defending": 0.05,
+        "Ball Security": 0.05,
+    },
+    "W": {
+        "Dribbling": 0.22,
+        "Creation": 0.18,
+        "Final Product": 0.18,
+        "Progression": 0.17,
+        "Receiving": 0.10,
+        "Duels": 0.08,
+        "Active Defending": 0.07,
     },
     "FW": {
         "Final Product": 0.35,
@@ -238,14 +242,23 @@ RADAR_AXES = {
         {"axis": "Defending", "style": ["Defensive challenges", "Interceptions", "Ball recoveries"], "performance": ["Defensive challenges won, %", "Tackles successful, %"]},
         {"axis": "Security", "style": ["Actions", "Passes"], "performance": ["Actions successful, %", "Bad ball control"], "inverse_performance": True},
     ],
-    "AM/W": [
-        {"axis": "Final Product", "style": ["Goals", "Assists", "Involvement in scoring attacks"], "performance": ["xGC (xG conversion)", "Chances successful, %"]},
-        {"axis": "Shooting", "style": ["Shots", "Shots from the penalty area"], "performance": ["Shots on target, %", "xGPS (xG per shot)"]},
+    "AM": [
+        {"axis": "Between Lines", "style": ["Open passes received in the final third", "Open passes received in the opponent's box"], "performance": ["Actions successful, %"]},
         {"axis": "Creation", "style": ["Key passes", "Passes for a shot", "Chances created"], "performance": ["Key passes accurate, %", "xA"]},
-        {"axis": "Receiving", "style": ["Open passes received in the final third", "Open passes received in the opponent's box"], "performance": ["Actions successful, %"]},
-        {"axis": "Dribbling", "style": ["Dribbles", "Dribbling in the final third"], "performance": ["Dribbles successful, %", "Dribbling in the final third successful, %"]},
+        {"axis": "Final Product", "style": ["Goals", "Assists", "Involvement in scoring attacks"], "performance": ["xGC (xG conversion)", "Chances successful, %"]},
+        {"axis": "Combination", "style": ["Passes", "Short passes", "Progressive passes"], "performance": ["Passes accurate, %", "Short passes accurate, %"]},
         {"axis": "Progression", "style": ["Progressive passes", "Final third entries", "Carry"], "performance": ["Progressive passes accurate, %", "Passes forward to the final third accurate, %"]},
+        {"axis": "Dribbling", "style": ["Dribbles", "Dribbling in the final third"], "performance": ["Dribbles successful, %", "Dribbling in the final third successful, %"]},
         {"axis": "Security", "style": ["Actions", "Passes"], "performance": ["Actions successful, %", "Lost balls"], "inverse_performance": True},
+    ],
+    "W": [
+        {"axis": "1v1", "style": ["Dribbles", "Dribbling in the final third"], "performance": ["Dribbles successful, %", "Dribbling in the final third successful, %"]},
+        {"axis": "Wide Creation", "style": ["Crosses", "Passes into the penalty box"], "performance": ["Crosses accurate, %", "Passes into the penalty box accurate, %"]},
+        {"axis": "Box Threat", "style": ["Actions in opponent's box", "Open passes received in the opponent's box"], "performance": ["xGPS (xG per shot)", "Chances successful, %"]},
+        {"axis": "Final Product", "style": ["Goals", "Assists", "Involvement in scoring attacks"], "performance": ["xGC (xG conversion)", "Chances successful, %"]},
+        {"axis": "Receiving", "style": ["Open passes received in the final third", "Open passes received"], "performance": ["Actions successful, %"]},
+        {"axis": "Progression", "style": ["Progressive passes", "Final third entries through carry", "Carry"], "performance": ["Progressive passes accurate, %", "Passes forward to the final third accurate, %"]},
+        {"axis": "Defensive Work", "style": ["Defensive challenges", "Ball recoveries"], "performance": ["Defensive challenges won, %", "Tackles successful, %"]},
     ],
     "FW": [
         {"axis": "Box Threat", "style": ["Actions in opponent's box", "Open passes received in the opponent's box"], "performance": ["Chances successful, %", "xGC (xG conversion)"]},

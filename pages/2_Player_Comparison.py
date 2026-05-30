@@ -141,7 +141,7 @@ if IS_GK:
         st.markdown('<div class="control-label">Compare as role</div><div class="minute-stepper-value">GK only</div>', unsafe_allow_html=True)
 else:
     role_keys = list(ROLE_BUCKETS.keys())
-    default_role = selected_player.get("Role bucket", "AM/W")
+    default_role = selected_player.get("Role bucket", "AM")
     default_role_index = role_keys.index(default_role) if default_role in role_keys else 0
     with context_cols[0]:
         compare_role = st.selectbox("Compare as role", role_keys, index=default_role_index)

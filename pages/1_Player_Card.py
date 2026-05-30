@@ -67,7 +67,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### Percentile context")
-    default_role = player.get("Role bucket", "AM/W")
+    default_role = player.get("Role bucket", "AM")
     role_keys = list(ROLE_BUCKETS.keys())
     default_role_index = role_keys.index(default_role) if default_role in role_keys else 0
     compare_role = st.selectbox("Compare as role", role_keys, index=default_role_index)
@@ -138,7 +138,8 @@ role_label_map = {
     "CB": "CENTRE BACK",
     "FB": "FULL BACK",
     "MF": "MIDFIELDER",
-    "AM/W": "ATT MID/WINGER",
+    "AM": "ATTACKING MID",
+    "W": "WINGER",
     "FW": "FORWARD",
 }
 

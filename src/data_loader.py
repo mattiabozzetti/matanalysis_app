@@ -5,6 +5,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from .role_utils import ROLE_BUCKETS, add_role_bucket
+
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
@@ -93,19 +95,8 @@ def _add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-ROLE_BUCKETS = {
-    "CB": ["CB", "LCB", "RCB"],
-    "FB": ["LB", "RB", "LWB", "RWB"],
-    "MF": ["CDM", "LDM", "RDM", "LCDM", "RCDM", "CM", "LCM", "RCM"],
-    "AM/W": ["CAM", "LCAM", "RCAM", "LAM", "RAM", "LM", "RM", "LW", "RW"],
-    "FW": ["CF", "LCF", "RCF", "ST", "SS"],
-}
-
-
 def _add_role_bucket(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    reverse = {pos: bucket for bucket, positions in ROLE_BUCKETS.items() for pos in positions}
-    df["Role bucket"] = df["Position"].astype(str).map(reverse).fillna("Other")
+    df = add_role_bucket(df)
     return df.loc[df["Position"].astype(str).ne("GK")].reset_index(drop=True)
 
 

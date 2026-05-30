@@ -13,7 +13,7 @@ Streamlit app for football player scouting. The first operational module is a **
   - metric families: Final Product, Shooting, Creation, Receiving, Dribbling, Progression, Passing Accuracy, Active Defending, Duels, Ball Security;
   - percentile bars for every metric;
   - selectable percentile context: player league, Big Five, all leagues, custom leagues;
-  - selectable role comparison bucket: CB, FB, MF, AM/W, FW;
+  - selectable role comparison bucket: CB, FB, MF, AM and W, FW;
   - role-weighted overall;
   - two bottom radar charts: Playing Style and Performance, both in percentile units.
 
