@@ -180,7 +180,57 @@ st.markdown(
         font-size: 0.92rem;
         padding: 12px 0;
     }
-    </style>
+    
+    .ranking-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid rgba(95,255,224,0.18);
+        border-radius: 18px;
+        background: rgba(10,16,36,0.78);
+        box-shadow: 0 14px 44px rgba(0,0,0,0.22);
+        margin: 0.4rem 0 1rem 0;
+    }
+    .ranking-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+        color: #F6F7FB;
+        font-size: 0.86rem;
+    }
+    .ranking-table thead th {
+        background: #10162B;
+        color: #AFC3E8;
+        text-align: left;
+        padding: 11px 10px;
+        font-size: 0.74rem;
+        font-weight: 950;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border-bottom: 1px solid rgba(95,255,224,0.18);
+    }
+    .ranking-table tbody td {
+        padding: 10px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.055);
+        background: rgba(16,22,43,0.72);
+    }
+    .ranking-table tbody tr:nth-child(even) td { background: rgba(12,18,38,0.78); }
+    .ranking-table tbody tr:hover td { background: rgba(95,255,224,0.075); }
+    .ranking-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 850; }
+    .ranking-table-player { font-weight: 950; color: #F6F7FB; white-space: nowrap; }
+    .ranking-score-pill {
+        display:inline-flex;
+        min-width:38px;
+        height:24px;
+        border-radius:999px;
+        align-items:center;
+        justify-content:center;
+        padding:0 8px;
+        background:rgba(95,255,224,0.08);
+        border:1px solid rgba(95,255,224,0.16);
+        font-weight:950;
+    }
+
+</style>
     """,
     unsafe_allow_html=True,
 )
@@ -480,6 +530,36 @@ if len(reference_df) < 20:
     )
 
 
+def render_dark_table(df: pd.DataFrame, score_cols: set[str] | None = None) -> str:
+    score_cols = score_cols or set()
+    parts = ['<div class="ranking-table-wrap"><table class="ranking-table">']
+    parts.append('<thead><tr>')
+    for col in df.columns:
+        parts.append(f'<th>{html.escape(str(col))}</th>')
+    parts.append('</tr></thead><tbody>')
+    for _, row in df.iterrows():
+        parts.append('<tr>')
+        for col in df.columns:
+            value = row[col]
+            if pd.isna(value):
+                txt = '—'
+            else:
+                txt = str(value)
+            cls = 'num' if col in {'Rank', 'Age', 'Minutes played', 'Value', 'Percentile'} else ''
+            if col in score_cols:
+                try:
+                    color = pct_color(float(value))
+                except Exception:
+                    color = '#8EA2C6'
+                parts.append(f'<td class="{cls}"><span class="ranking-score-pill" style="color:{color};">{html.escape(txt)}</span></td>')
+            elif col == 'Player':
+                parts.append(f'<td class="ranking-table-player">{html.escape(txt)}</td>')
+            else:
+                parts.append(f'<td class="{cls}">{html.escape(txt)}</td>')
+        parts.append('</tr>')
+    parts.append('</tbody></table></div>')
+    return ''.join(parts)
+
 def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str = "#5FFFE0", *, is_gk_panel: bool = False) -> None:
     safe_title = html.escape(title)
     panel_html = (
@@ -537,7 +617,7 @@ def render_ranking_panel(title: str, table: pd.DataFrame, fmt: str, color: str =
             if "Position" not in show.columns:
                 show["Position"] = "GK"
             cols = ["Rank", "Player", "Team", "League", "Age", "Position", "Minutes played", "Value", "Percentile"]
-            st.dataframe(show[cols], use_container_width=True, hide_index=True)
+            st.markdown(render_dark_table(show[cols], {"Percentile"}), unsafe_allow_html=True)
 
 
 if is_gk:
