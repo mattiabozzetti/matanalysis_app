@@ -151,4 +151,6 @@ def available_seasons(df: pd.DataFrame) -> list[str]:
 
 
 def available_leagues(df: pd.DataFrame) -> list[str]:
+    if "League" not in df.columns:
+        return []
     return sorted(df["League"].dropna().astype(str).unique().tolist())

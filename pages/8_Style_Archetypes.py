@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.ui import inject_css, pct_color
+from src.competition_utils import is_big_five_mask
 
 ROOT = Path(__file__).resolve().parents[1]
 PROCESSED = ROOT / "data" / "processed"
@@ -166,10 +167,38 @@ def apply_cluster_labels(profile_df: pd.DataFrame, labels_df: pd.DataFrame) -> p
     return out
 
 
-def cluster_cards(profile_df: pd.DataFrame) -> None:
+def representative_players_text(player_df: pd.DataFrame, cluster_id: str, max_players: int = 8) -> tuple[str, bool]:
+    """Representative players prioritising Big Five leagues for immediate interpretability."""
+    if player_df.empty or "style_cluster_id" not in player_df.columns:
+        return "", False
+    sub = player_df[player_df["style_cluster_id"].astype(str).eq(str(cluster_id))].copy()
+    if sub.empty:
+        return "", False
+    big = sub.loc[is_big_five_mask(sub)].copy() if {"League", "Nation"}.issubset(sub.columns) else pd.DataFrame()
+    used_big_five = not big.empty
+    if used_big_five:
+        sub = big
+    sub["_sort_conf"] = pd.to_numeric(sub.get("style_cluster_confidence", -1), errors="coerce").fillna(-1) if "style_cluster_confidence" in sub.columns else -1
+    sub["_sort_min"] = pd.to_numeric(sub.get("Minutes played", 0), errors="coerce").fillna(0) if "Minutes played" in sub.columns else 0
+    sub = sub.sort_values(["_sort_conf", "_sort_min"], ascending=[False, False]).head(max_players)
+    names = []
+    for _, row in sub.iterrows():
+        player = str(row.get("Player", "Unknown"))
+        team = str(row.get("Team", ""))
+        league = str(row.get("League", "")) if "League" in row.index and pd.notna(row.get("League")) else ""
+        names.append(f"{player} ({team}, {league})" if league else f"{player} ({team})")
+    return " | ".join(names), used_big_five
+
+
+def cluster_cards(profile_df: pd.DataFrame, player_df: pd.DataFrame) -> None:
     cols = st.columns(3)
     for i, (_, row) in enumerate(profile_df.iterrows()):
         desc = row.get("style_cluster_description") or row.get("description") or ""
+        reps, reps_big_five = representative_players_text(player_df, str(row.get("style_cluster_id", "")))
+        if not reps:
+            reps = str(row.get("representative_players", ""))
+            reps_big_five = False
+        rep_label = "Representative players · Big Five" if reps_big_five else "Representative players"
         parts = []
         parts.append('<div class="arch-card">')
         parts.append('<div class="arch-card-head">')
@@ -187,9 +216,8 @@ def cluster_cards(profile_df: pd.DataFrame) -> None:
         parts.append(f'<div class="arch-mini-text">{html.escape(str(row.get("distinctive_high", "—")))}</div>')
         parts.append('<div class="arch-mini-label">Distinctive low</div>')
         parts.append(f'<div class="arch-mini-text">{html.escape(str(row.get("distinctive_low", "—")))}</div>')
-        reps = str(row.get("representative_players", ""))
         if reps:
-            parts.append('<div class="arch-mini-label">Representative players</div>')
+            parts.append(f'<div class="arch-mini-label">{html.escape(rep_label)}</div>')
             parts.append(f'<div class="arch-mini-text">{html.escape(reps)}</div>')
         parts.append('</div>')
         with cols[i % 3]:
@@ -241,7 +269,7 @@ st.markdown(
 )
 
 st.markdown('<div class="arch-section-title">Cluster cards</div>', unsafe_allow_html=True)
-cluster_cards(profile_df)
+cluster_cards(profile_df, player_df)
 
 cluster_options = profile_df["style_cluster_id"].tolist()
 selected_cluster = st.selectbox("Cluster detail", cluster_options, format_func=lambda x: f"{x} · {profile_df.loc[profile_df['style_cluster_id'].eq(x), 'style_cluster_name'].iloc[0]}")
