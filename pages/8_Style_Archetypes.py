@@ -70,8 +70,10 @@ def load_archetype_data() -> dict[str, pd.DataFrame]:
         "gk": pd.read_csv(PROCESSED / "gk_enriched_with_clusters.csv.gz", compression="gzip", low_memory=False) if (PROCESSED / "gk_enriched_with_clusters.csv.gz").exists() else pd.DataFrame(),
         "profiles": _read_csv(PROCESSED / "style_cluster_profiles.csv"),
         "metrics": _read_csv(PROCESSED / "style_cluster_metric_profiles.csv"),
+        "labels": _read_csv(PROCESSED / "style_cluster_labels.csv"),
         "gk_profiles": _read_csv(PROCESSED / "gk_style_cluster_profiles.csv"),
         "gk_metrics": _read_csv(PROCESSED / "gk_style_cluster_metric_profiles.csv"),
+        "gk_labels": _read_csv(PROCESSED / "gk_style_cluster_labels.csv"),
     }
 
 
@@ -119,6 +121,51 @@ def dark_table(df: pd.DataFrame, score_cols: set[str] | None = None) -> str:
     return "".join(parts)
 
 
+def apply_cluster_labels(profile_df: pd.DataFrame, labels_df: pd.DataFrame) -> pd.DataFrame:
+    """Overwrite Unlabeled cluster names in profile files with FM-like labels."""
+    if profile_df.empty or labels_df.empty or "style_cluster_id" not in profile_df.columns:
+        return profile_df
+
+    labels = labels_df.copy()
+    keep = [
+        c for c in [
+            "style_cluster_id",
+            "style_cluster_name",
+            "style_cluster_short_label",
+            "description",
+            "style_cluster_description",
+        ]
+        if c in labels.columns
+    ]
+    labels = labels[keep].drop_duplicates("style_cluster_id")
+
+    if "description" in labels.columns and "style_cluster_description" not in labels.columns:
+        labels = labels.rename(columns={"description": "style_cluster_description"})
+
+    out = profile_df.drop(
+        columns=[
+            "style_cluster_name",
+            "style_cluster_short_label",
+            "style_cluster_description",
+            "description",
+        ],
+        errors="ignore",
+    ).merge(labels, on="style_cluster_id", how="left")
+
+    # Safe fallback only if a cluster has no label at all.
+    if "style_cluster_name" not in out.columns:
+        out["style_cluster_name"] = out["style_cluster_id"].astype(str)
+    out["style_cluster_name"] = out["style_cluster_name"].fillna(out["style_cluster_id"].astype(str))
+    if "style_cluster_short_label" not in out.columns:
+        out["style_cluster_short_label"] = out["style_cluster_name"]
+    out["style_cluster_short_label"] = out["style_cluster_short_label"].fillna(out["style_cluster_name"])
+    if "style_cluster_description" not in out.columns:
+        out["style_cluster_description"] = ""
+    out["style_cluster_description"] = out["style_cluster_description"].fillna("")
+
+    return out
+
+
 def cluster_cards(profile_df: pd.DataFrame) -> None:
     cols = st.columns(3)
     for i, (_, row) in enumerate(profile_df.iterrows()):
@@ -157,11 +204,11 @@ with st.sidebar:
     role = st.selectbox("Role", role_options, index=0)
 
 if role == "GK":
-    profile_df = data["gk_profiles"].copy()
+    profile_df = apply_cluster_labels(data["gk_profiles"].copy(), data["gk_labels"].copy())
     metric_df = data["gk_metrics"].copy()
     player_df = data["gk"].copy()
 else:
-    profile_df = data["profiles"].copy()
+    profile_df = apply_cluster_labels(data["profiles"].copy(), data["labels"].copy())
     metric_df = data["metrics"].copy()
     player_df = data["players"].copy()
 
