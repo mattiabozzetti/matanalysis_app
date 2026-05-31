@@ -1,0 +1,100 @@
+metric,exists,coverage,role_bucket
+Passes,True,1.0,CB
+Short passes,True,1.0,CB
+Long passes,True,1.0,CB
+Progressive passes,True,1.0,CB
+Passes forward to the final third,True,1.0,CB
+Passes into the final third,False,0.0,CB
+Carry,True,0.4860845549182069,CB
+Defensive challenges,True,1.0,CB
+Tackles,True,1.0,CB
+Interceptions,True,1.0,CB
+Ball recoveries,True,1.0,CB
+Loose ball recoveries,True,0.515190142341194,CB
+Air challenges,True,1.0,CB
+Lost balls,True,1.0,CB
+Bad ball control,True,0.3858083705120034,CB
+Passes,True,1.0,FB
+Progressive passes,True,1.0,FB
+Passes forward to the final third,True,1.0,FB
+Final third entries,True,0.9997733454215775,FB
+Final third entries through pass,True,0.9993200362647325,FB
+Final third entries through carry,True,0.7606527651858568,FB
+Carry,True,0.5129193109700816,FB
+Crosses,True,0.9993200362647325,FB
+Passes into the penalty box,True,1.0,FB
+Open passes received in the final third,True,1.0,FB
+Dribbles,True,0.9993200362647325,FB
+Defensive challenges,True,1.0,FB
+Tackles,True,1.0,FB
+Ball recoveries,True,1.0,FB
+Lost balls,True,1.0,FB
+Passes,True,1.0,MF
+Short passes,True,1.0,MF
+Progressive passes,True,1.0,MF
+Passes forward to the final third,True,1.0,MF
+Final third entries,True,1.0,MF
+Final third entries through pass,True,1.0,MF
+Final third entries through carry,True,0.7721570214488062,MF
+Carry,True,0.509915014164306,MF
+Key passes,True,0.9471873735329825,MF
+Passes for a shot,True,0.9662080129502226,MF
+Chances created,True,0.9593282072035613,MF
+Open passes received,True,1.0,MF
+Open passes received in the central third,True,1.0,MF
+Open passes received in the final third,True,1.0,MF
+Interceptions,True,1.0,MF
+Ball recoveries,True,1.0,MF
+Defensive challenges,True,1.0,MF
+Lost balls,True,1.0,MF
+Passes,True,1.0,AM
+Short passes,True,1.0,AM
+Progressive passes,True,1.0,AM
+Passes forward to the final third,True,1.0,AM
+Final third entries,True,0.9981873111782478,AM
+Key passes,True,0.997583081570997,AM
+Passes for a shot,True,0.9945619335347432,AM
+Chances created,True,0.9969788519637462,AM
+xA,True,0.9993957703927493,AM
+Open passes received in the final third,True,1.0,AM
+Open passes received in the opponent's box,True,0.9981873111782478,AM
+Actions in opponent's box,True,1.0,AM
+Carry,True,0.4676737160120846,AM
+Dribbles,True,1.0,AM
+Dribbling in the final third,True,0.9981873111782478,AM
+Shots,True,1.0,AM
+Lost balls,True,1.0,AM
+Dribbles,True,1.0,W
+Dribbling in the final third,True,0.9993429697766097,W
+Crosses,True,0.9986859395532195,W
+Passes into the penalty box,True,1.0,W
+Progressive passes,True,1.0,W
+Final third entries,True,0.9967148488830486,W
+Final third entries through carry,True,0.8436268068331143,W
+Carry,True,0.5965834428383706,W
+Open passes received,True,1.0,W
+Open passes received in the final third,True,1.0,W
+Open passes received in the opponent's box,True,0.9993429697766097,W
+Actions in opponent's box,True,1.0,W
+Shots,True,1.0,W
+Shots from the penalty area,True,0.9980289093298291,W
+Key passes,True,0.9908015768725361,W
+Passes for a shot,True,0.9950722733245729,W
+Defensive challenges,True,1.0,W
+Ball recoveries,True,1.0,W
+Lost balls,True,1.0,W
+Shots,True,1.0,FW
+Shots from the penalty area,True,1.0,FW
+xG (expected goals),True,1.0,FW
+Actions in opponent's box,True,1.0,FW
+Open passes received,True,1.0,FW
+Open passes received in the final third,True,1.0,FW
+Open passes received in the opponent's box,True,0.9996858309770656,FW
+Air challenges,True,1.0,FW
+Attacking challenges,True,1.0,FW
+Defensive challenges,True,1.0,FW
+Dribbles,True,0.9996858309770656,FW
+Key passes,True,0.9798931825322024,FW
+Passes for a shot,True,0.9890040841972981,FW
+Passes,True,1.0,FW
+Lost balls,True,1.0,FW

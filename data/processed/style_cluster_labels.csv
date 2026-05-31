@@ -1,20 +1,21 @@
 role_bucket,style_cluster_id,style_cluster_name,style_cluster_short_label,description
-CB,CB_C01,No-Nonsense Centre-Back,No-Nonsense CB,"Conservative, low-event centre-back profile with stronger aerial/long-ball tendency and lower active defensive/progression volume."
-CB,CB_C02,Stopper Centre-Back,Stopper CB,"Aggressive front-foot centre-back with high defensive challenges, tackles, interceptions and ball recovery activity."
-CB,CB_C03,Ball-Playing Centre-Back,Ball-Playing CB,"Build-up centre-back with higher passing volume, progressive passing and forward-third progression."
-FB,FB_C01,Support Full-Back,Support FB,"Lower-event full-back profile, generally more conservative and less dominant in final-third progression."
-FB,FB_C02,Deep Progressor Full-Back,Deep Progressor FB,Full-back who progresses mainly through passing from deeper zones and contributes to build-up circulation.
-FB,FB_C03,Complete Full-Back,Complete FB,"Dynamic two-way full-back with final-third involvement, carries, defensive volume and overlapping activity."
-MF,MF_C01,Ball-Winning Midfielder,Ball-Winning MF,"Defensive/support midfielder profile with stronger recovery, duel and disruption traits and lower creative volume."
-MF,MF_C02,Advanced Playmaker,Advanced Playmaker,"Creative midfielder profile with chance creation, key passes, passes for shots and high final-third involvement."
-MF,MF_C03,Box-to-Box Midfielder,Box-to-Box MF,"Dynamic transitional midfielder combining defensive activity, carries, ball recoveries and forward movement."
-MF,MF_C04,Deep-Lying Playmaker,Deep-Lying Playmaker,"High-volume controller profile with passing circulation, receiving volume and progression through pass."
-AM,AM_C01,Linking Attacking Midfielder,Linking AM,"Connector between midfield and attack, more associative and progression-oriented than box-attacking."
-AM,AM_C02,Classic No.10,Classic No.10,"Central creator with high xA, key passes, chances created and between-the-lines involvement."
-AM,AM_C03,Shadow Striker,Shadow Striker,"Goal-threat attacking midfielder with strong box presence, shots, carries and final-third actions."
-W,W_C01,Inside Runner,Inside Runner,Wide attacker oriented to off-ball/box running rather than heavy creation or 1v1 carrying volume.
-W,W_C02,Direct Winger,Direct Winger,"Explosive 1v1 winger with dribbling, carries, final-third entries and box attack activity."
-W,W_C03,Wide Playmaker,Wide Playmaker,"Creative winger profile with progressive passes, box passes, key passes and chance creation."
-FW,FW_C01,Poacher,Poacher,Low-touch box forward focused on penalty-area presence and finishing rather than link-up or duel volume.
-FW,FW_C02,Target Forward,Target Forward,"Physical forward profile with aerial/attacking duels, direct outlet play and higher contact/retention workload."
-FW,FW_C03,Deep-Lying Forward,Deep-Lying Forward,"Associative forward with more link-up, passing, receiving and creative involvement."
+CB,CB_C01,No-Nonsense Centre-Back,No-Nonsense CB,Aerial/long-passing centre-back with a lower-event defensive profile and more direct circulation.
+CB,CB_C02,Stopper Centre-Back,Stopper CB,"Aggressive front-foot defender: interceptions, defensive challenges, tackles and recoveries."
+CB,CB_C03,Ball-Playing Centre-Back,Ball-Playing CB,"Build-up centre-back with high passing volume, progressive passes and final-third progression."
+FB,FB_C01,Direct Wing-Back,Direct WB,"Wide runner with dribbles, crosses, final-third receptions and carries; more direct and risk-taking."
+FB,FB_C02,Deep Progressor Full-Back,Deep Progressor FB,Full-back who advances play mainly through passing: progressive passes and passes into the final third.
+FB,FB_C03,Complete Full-Back,Complete FB,"Two-way full-back/wing-back with final-third entries, carries, tackles and defensive challenges."
+MF,MF_C01,Ball-Winning Midfielder,Ball-Winning MF,"Defensive midfielder profile with ball recoveries, interceptions and defensive challenges."
+MF,MF_C02,Deep-Lying Playmaker,Deep-Lying Playmaker,"High-volume controller with passes, progressive passes and central receptions."
+MF,MF_C03,Box-to-Box Midfielder,Box-to-Box MF,"Transitional midfielder combining defensive activity, carries and final-third entries."
+MF,MF_C04,Advanced Playmaker,Advanced Playmaker,"Creative midfielder with chances created, key passes, passes for shot and final-third receptions."
+MF,MF_C05,Roaming Playmaker,Roaming Playmaker,Mobile connector/progressor receiving centrally and advancing play into the final third.
+AM,AM_C01,Linking Attacking Midfielder,Linking AM,Associative attacking midfielder: progression and passing more than penalty-box occupation.
+AM,AM_C02,Classic No.10,Classic No.10,"Creative No.10 profile with xA, key passes, passes for shot and chance creation."
+AM,AM_C03,Shadow Striker,Shadow Striker,"Box-attacking attacking midfielder with shots, box receptions and final-third dribbling."
+W,W_C01,Inside Runner,Inside Runner,"Off-ball/box-oriented wide player with shots, box presence and defensive contribution."
+W,W_C02,Direct Winger,Direct Winger,"1v1 winger with carries, dribbles, final-third entries and penalty-area activity."
+W,W_C03,Wide Playmaker,Wide Playmaker,"Creative wide player with progressive passes, passes into the box, key passes and final-third delivery."
+FW,FW_C01,Poacher,Poacher,"Penalty-box forward with shots, xG, box receptions and attacking-area presence."
+FW,FW_C02,Target Forward,Target Forward,"Physical duel forward with attacking challenges, aerial volume, box activity and hold-up demands."
+FW,FW_C03,Deep-Lying Forward,Deep-Lying Forward,"Associative forward with open-play receptions, passing, key passes and link-up involvement."

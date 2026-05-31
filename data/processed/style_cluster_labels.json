@@ -1,135 +1,142 @@
 [
   {
-    "role_bucket":"CB",
-    "style_cluster_id":"CB_C01",
-    "style_cluster_name":"No-Nonsense Centre-Back",
-    "style_cluster_short_label":"No-Nonsense CB",
-    "description":"Conservative, low-event centre-back profile with stronger aerial\/long-ball tendency and lower active defensive\/progression volume."
+    "role_bucket": "CB",
+    "style_cluster_id": "CB_C01",
+    "style_cluster_name": "No-Nonsense Centre-Back",
+    "style_cluster_short_label": "No-Nonsense CB",
+    "description": "Aerial/long-passing centre-back with a lower-event defensive profile and more direct circulation."
   },
   {
-    "role_bucket":"CB",
-    "style_cluster_id":"CB_C02",
-    "style_cluster_name":"Stopper Centre-Back",
-    "style_cluster_short_label":"Stopper CB",
-    "description":"Aggressive front-foot centre-back with high defensive challenges, tackles, interceptions and ball recovery activity."
+    "role_bucket": "CB",
+    "style_cluster_id": "CB_C02",
+    "style_cluster_name": "Stopper Centre-Back",
+    "style_cluster_short_label": "Stopper CB",
+    "description": "Aggressive front-foot defender: interceptions, defensive challenges, tackles and recoveries."
   },
   {
-    "role_bucket":"CB",
-    "style_cluster_id":"CB_C03",
-    "style_cluster_name":"Ball-Playing Centre-Back",
-    "style_cluster_short_label":"Ball-Playing CB",
-    "description":"Build-up centre-back with higher passing volume, progressive passing and forward-third progression."
+    "role_bucket": "CB",
+    "style_cluster_id": "CB_C03",
+    "style_cluster_name": "Ball-Playing Centre-Back",
+    "style_cluster_short_label": "Ball-Playing CB",
+    "description": "Build-up centre-back with high passing volume, progressive passes and final-third progression."
   },
   {
-    "role_bucket":"FB",
-    "style_cluster_id":"FB_C01",
-    "style_cluster_name":"Support Full-Back",
-    "style_cluster_short_label":"Support FB",
-    "description":"Lower-event full-back profile, generally more conservative and less dominant in final-third progression."
+    "role_bucket": "FB",
+    "style_cluster_id": "FB_C01",
+    "style_cluster_name": "Direct Wing-Back",
+    "style_cluster_short_label": "Direct WB",
+    "description": "Wide runner with dribbles, crosses, final-third receptions and carries; more direct and risk-taking."
   },
   {
-    "role_bucket":"FB",
-    "style_cluster_id":"FB_C02",
-    "style_cluster_name":"Deep Progressor Full-Back",
-    "style_cluster_short_label":"Deep Progressor FB",
-    "description":"Full-back who progresses mainly through passing from deeper zones and contributes to build-up circulation."
+    "role_bucket": "FB",
+    "style_cluster_id": "FB_C02",
+    "style_cluster_name": "Deep Progressor Full-Back",
+    "style_cluster_short_label": "Deep Progressor FB",
+    "description": "Full-back who advances play mainly through passing: progressive passes and passes into the final third."
   },
   {
-    "role_bucket":"FB",
-    "style_cluster_id":"FB_C03",
-    "style_cluster_name":"Complete Full-Back",
-    "style_cluster_short_label":"Complete FB",
-    "description":"Dynamic two-way full-back with final-third involvement, carries, defensive volume and overlapping activity."
+    "role_bucket": "FB",
+    "style_cluster_id": "FB_C03",
+    "style_cluster_name": "Complete Full-Back",
+    "style_cluster_short_label": "Complete FB",
+    "description": "Two-way full-back/wing-back with final-third entries, carries, tackles and defensive challenges."
   },
   {
-    "role_bucket":"MF",
-    "style_cluster_id":"MF_C01",
-    "style_cluster_name":"Ball-Winning Midfielder",
-    "style_cluster_short_label":"Ball-Winning MF",
-    "description":"Defensive\/support midfielder profile with stronger recovery, duel and disruption traits and lower creative volume."
+    "role_bucket": "MF",
+    "style_cluster_id": "MF_C01",
+    "style_cluster_name": "Ball-Winning Midfielder",
+    "style_cluster_short_label": "Ball-Winning MF",
+    "description": "Defensive midfielder profile with ball recoveries, interceptions and defensive challenges."
   },
   {
-    "role_bucket":"MF",
-    "style_cluster_id":"MF_C02",
-    "style_cluster_name":"Advanced Playmaker",
-    "style_cluster_short_label":"Advanced Playmaker",
-    "description":"Creative midfielder profile with chance creation, key passes, passes for shots and high final-third involvement."
+    "role_bucket": "MF",
+    "style_cluster_id": "MF_C02",
+    "style_cluster_name": "Deep-Lying Playmaker",
+    "style_cluster_short_label": "Deep-Lying Playmaker",
+    "description": "High-volume controller with passes, progressive passes and central receptions."
   },
   {
-    "role_bucket":"MF",
-    "style_cluster_id":"MF_C03",
-    "style_cluster_name":"Box-to-Box Midfielder",
-    "style_cluster_short_label":"Box-to-Box MF",
-    "description":"Dynamic transitional midfielder combining defensive activity, carries, ball recoveries and forward movement."
+    "role_bucket": "MF",
+    "style_cluster_id": "MF_C03",
+    "style_cluster_name": "Box-to-Box Midfielder",
+    "style_cluster_short_label": "Box-to-Box MF",
+    "description": "Transitional midfielder combining defensive activity, carries and final-third entries."
   },
   {
-    "role_bucket":"MF",
-    "style_cluster_id":"MF_C04",
-    "style_cluster_name":"Deep-Lying Playmaker",
-    "style_cluster_short_label":"Deep-Lying Playmaker",
-    "description":"High-volume controller profile with passing circulation, receiving volume and progression through pass."
+    "role_bucket": "MF",
+    "style_cluster_id": "MF_C04",
+    "style_cluster_name": "Advanced Playmaker",
+    "style_cluster_short_label": "Advanced Playmaker",
+    "description": "Creative midfielder with chances created, key passes, passes for shot and final-third receptions."
   },
   {
-    "role_bucket":"AM",
-    "style_cluster_id":"AM_C01",
-    "style_cluster_name":"Linking Attacking Midfielder",
-    "style_cluster_short_label":"Linking AM",
-    "description":"Connector between midfield and attack, more associative and progression-oriented than box-attacking."
+    "role_bucket": "MF",
+    "style_cluster_id": "MF_C05",
+    "style_cluster_name": "Roaming Playmaker",
+    "style_cluster_short_label": "Roaming Playmaker",
+    "description": "Mobile connector/progressor receiving centrally and advancing play into the final third."
   },
   {
-    "role_bucket":"AM",
-    "style_cluster_id":"AM_C02",
-    "style_cluster_name":"Classic No.10",
-    "style_cluster_short_label":"Classic No.10",
-    "description":"Central creator with high xA, key passes, chances created and between-the-lines involvement."
+    "role_bucket": "AM",
+    "style_cluster_id": "AM_C01",
+    "style_cluster_name": "Linking Attacking Midfielder",
+    "style_cluster_short_label": "Linking AM",
+    "description": "Associative attacking midfielder: progression and passing more than penalty-box occupation."
   },
   {
-    "role_bucket":"AM",
-    "style_cluster_id":"AM_C03",
-    "style_cluster_name":"Shadow Striker",
-    "style_cluster_short_label":"Shadow Striker",
-    "description":"Goal-threat attacking midfielder with strong box presence, shots, carries and final-third actions."
+    "role_bucket": "AM",
+    "style_cluster_id": "AM_C02",
+    "style_cluster_name": "Classic No.10",
+    "style_cluster_short_label": "Classic No.10",
+    "description": "Creative No.10 profile with xA, key passes, passes for shot and chance creation."
   },
   {
-    "role_bucket":"W",
-    "style_cluster_id":"W_C01",
-    "style_cluster_name":"Inside Runner",
-    "style_cluster_short_label":"Inside Runner",
-    "description":"Wide attacker oriented to off-ball\/box running rather than heavy creation or 1v1 carrying volume."
+    "role_bucket": "AM",
+    "style_cluster_id": "AM_C03",
+    "style_cluster_name": "Shadow Striker",
+    "style_cluster_short_label": "Shadow Striker",
+    "description": "Box-attacking attacking midfielder with shots, box receptions and final-third dribbling."
   },
   {
-    "role_bucket":"W",
-    "style_cluster_id":"W_C02",
-    "style_cluster_name":"Direct Winger",
-    "style_cluster_short_label":"Direct Winger",
-    "description":"Explosive 1v1 winger with dribbling, carries, final-third entries and box attack activity."
+    "role_bucket": "W",
+    "style_cluster_id": "W_C01",
+    "style_cluster_name": "Inside Runner",
+    "style_cluster_short_label": "Inside Runner",
+    "description": "Off-ball/box-oriented wide player with shots, box presence and defensive contribution."
   },
   {
-    "role_bucket":"W",
-    "style_cluster_id":"W_C03",
-    "style_cluster_name":"Wide Playmaker",
-    "style_cluster_short_label":"Wide Playmaker",
-    "description":"Creative winger profile with progressive passes, box passes, key passes and chance creation."
+    "role_bucket": "W",
+    "style_cluster_id": "W_C02",
+    "style_cluster_name": "Direct Winger",
+    "style_cluster_short_label": "Direct Winger",
+    "description": "1v1 winger with carries, dribbles, final-third entries and penalty-area activity."
   },
   {
-    "role_bucket":"FW",
-    "style_cluster_id":"FW_C01",
-    "style_cluster_name":"Poacher",
-    "style_cluster_short_label":"Poacher",
-    "description":"Low-touch box forward focused on penalty-area presence and finishing rather than link-up or duel volume."
+    "role_bucket": "W",
+    "style_cluster_id": "W_C03",
+    "style_cluster_name": "Wide Playmaker",
+    "style_cluster_short_label": "Wide Playmaker",
+    "description": "Creative wide player with progressive passes, passes into the box, key passes and final-third delivery."
   },
   {
-    "role_bucket":"FW",
-    "style_cluster_id":"FW_C02",
-    "style_cluster_name":"Target Forward",
-    "style_cluster_short_label":"Target Forward",
-    "description":"Physical forward profile with aerial\/attacking duels, direct outlet play and higher contact\/retention workload."
+    "role_bucket": "FW",
+    "style_cluster_id": "FW_C01",
+    "style_cluster_name": "Poacher",
+    "style_cluster_short_label": "Poacher",
+    "description": "Penalty-box forward with shots, xG, box receptions and attacking-area presence."
   },
   {
-    "role_bucket":"FW",
-    "style_cluster_id":"FW_C03",
-    "style_cluster_name":"Deep-Lying Forward",
-    "style_cluster_short_label":"Deep-Lying Forward",
-    "description":"Associative forward with more link-up, passing, receiving and creative involvement."
+    "role_bucket": "FW",
+    "style_cluster_id": "FW_C02",
+    "style_cluster_name": "Target Forward",
+    "style_cluster_short_label": "Target Forward",
+    "description": "Physical duel forward with attacking challenges, aerial volume, box activity and hold-up demands."
+  },
+  {
+    "role_bucket": "FW",
+    "style_cluster_id": "FW_C03",
+    "style_cluster_name": "Deep-Lying Forward",
+    "style_cluster_short_label": "Deep-Lying Forward",
+    "description": "Associative forward with open-play receptions, passing, key passes and link-up involvement."
   }
 ]
