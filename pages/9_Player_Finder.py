@@ -1072,17 +1072,30 @@ render_distribution(reference_pool, candidate_pool, inspect_metric, inspect_spec
 # -------------------------------------------------------------------------
 
 summary = st.columns(5)
+criteria_total_value = int(scored["criteria_total"].max()) if len(scored) else len(active_criteria)
+near_threshold = max(1, criteria_total_value - 2)
+wildcard_threshold = max(1, criteria_total_value - 3)
+
 summary[0].metric("Reference pool", len(reference_pool))
 summary[1].metric("Candidate pool", len(candidate_pool))
 summary[2].metric("Strict matches", int(scored["criteria_matched"].eq(scored["criteria_total"]).sum()))
-summary[3].metric("Near matches", int((scored["criteria_matched"] >= max(1, scored["criteria_total"] - 2)).sum()))
+summary[3].metric("Near matches", int((scored["criteria_matched"] >= near_threshold).sum()))
 summary[4].metric("Median fit", fmt_num(scored["Finder Score"].median(), 0))
 
 strict_matches = scored[scored["criteria_matched"].eq(scored["criteria_total"])].copy()
-near_matches = scored[(scored["criteria_matched"] >= max(1, scored["criteria_total"] - 2)) & ~scored.index.isin(strict_matches.index)].copy()
+
+criteria_total_value = int(scored["criteria_total"].max()) if len(scored) else len(active_criteria)
+near_threshold = max(1, criteria_total_value - 2)
+wildcard_threshold = max(1, criteria_total_value - 3)
+
+near_matches = scored[
+    (scored["criteria_matched"] >= near_threshold)
+    & ~scored.index.isin(strict_matches.index)
+].copy()
+
 wildcards = scored[
     (pd.to_numeric(scored.get("Age"), errors="coerce") <= 23)
-    & (scored["criteria_matched"] >= max(1, scored["criteria_total"] - 3))
+    & (scored["criteria_matched"] >= wildcard_threshold)
     & ~scored.index.isin(strict_matches.index)
     & ~scored.index.isin(near_matches.index)
 ].copy()
