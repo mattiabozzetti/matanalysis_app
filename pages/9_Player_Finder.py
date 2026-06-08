@@ -664,10 +664,12 @@ def render_cards(df: pd.DataFrame, criteria: list[MetricSpec], active_family_nam
         score = float(row.get("Finder Score", np.nan))
         match = int(row.get("criteria_matched", 0))
         total = int(row.get("criteria_total", 0))
+        match_ratio = float(row.get("match_ratio", 0)) if not pd.isna(row.get("match_ratio", np.nan)) else 0.0
         score_color = pct_color(score) if not pd.isna(score) else "#8EA2C6"
         meta = (
             f"{fmt_int(row.get('Age'))} yrs · {txt(row.get('Position'))} · "
-            f"{txt(row.get('Team'))} · {txt(row.get('League'))} · {style_label(row)}"
+            f"{txt(row.get('Team'))} · {txt(row.get('League'))} · {style_label(row)} · "
+            f"{match}/{total} criteria ({match_ratio:.0%})"
         )
         chips = []
         for family in active_family_names[:6]:
@@ -1045,6 +1047,7 @@ scored["Fit Score"] = fit / max(weight_sum, 1e-9)
 pass_cols = [f"pass__{s['metric']}" for s in active_criteria if f"pass__{s['metric']}" in scored.columns]
 scored["criteria_matched"] = scored[pass_cols].sum(axis=1) if pass_cols else 0
 scored["criteria_total"] = len(pass_cols)
+scored["match_ratio"] = scored["criteria_matched"] / max(len(pass_cols), 1)
 
 # Anchor similarity on active metric percentiles
 if anchor_row is not None and anchor_weight > 0:
@@ -1094,37 +1097,56 @@ render_distribution(reference_pool, candidate_pool, inspect_metric, inspect_spec
 # Results
 # -------------------------------------------------------------------------
 
-summary = st.columns(5)
-criteria_total_value = int(scored["criteria_total"].max()) if len(scored) else len(active_criteria)
-near_threshold = max(1, criteria_total_value - 2)
-wildcard_threshold = max(1, criteria_total_value - 3)
+# With broad metric families it is unrealistic to require every single metric
+# threshold to be passed. A high-line CB profile can be elite in build-up and
+# defensive aggression while missing a few duel/accuracy cutoffs. Therefore
+# results are based on a matched-criteria ratio plus the weighted Finder Score.
+if strictness == "Strict":
+    strong_ratio = 0.72
+    secondary_ratio = 0.56
+    min_strong_score = 58
+elif strictness == "Exploratory":
+    strong_ratio = 0.50
+    secondary_ratio = 0.34
+    min_strong_score = 48
+else:
+    strong_ratio = 0.62
+    secondary_ratio = 0.46
+    min_strong_score = 53
 
+summary = st.columns(5)
 summary[0].metric("Reference pool", len(reference_pool))
 summary[1].metric("Candidate pool", len(candidate_pool))
-summary[2].metric("Strict matches", int(scored["criteria_matched"].eq(scored["criteria_total"]).sum()))
-summary[3].metric("Near matches", int((scored["criteria_matched"] >= near_threshold).sum()))
+summary[2].metric("Strong fits", int(((scored["match_ratio"] >= strong_ratio) & (scored["Finder Score"] >= min_strong_score)).sum()))
+summary[3].metric("Secondary fits", int((scored["match_ratio"] >= secondary_ratio).sum()))
 summary[4].metric("Median fit", fmt_num(scored["Finder Score"].median(), 0))
 
-strict_matches = scored[scored["criteria_matched"].eq(scored["criteria_total"])].copy()
-
-criteria_total_value = int(scored["criteria_total"].max()) if len(scored) else len(active_criteria)
-near_threshold = max(1, criteria_total_value - 2)
-wildcard_threshold = max(1, criteria_total_value - 3)
-
-near_matches = scored[
-    (scored["criteria_matched"] >= near_threshold)
-    & ~scored.index.isin(strict_matches.index)
+strong_fits = scored[
+    (scored["match_ratio"] >= strong_ratio)
+    & (scored["Finder Score"] >= min_strong_score)
 ].copy()
+
+secondary_fits = scored[
+    (scored["match_ratio"] >= secondary_ratio)
+    & ~scored.index.isin(strong_fits.index)
+].copy()
+
+# Always keep a usable shortlist. If thresholds are too narrow, show the best
+# ranked candidates instead of an empty page.
+top_fits = scored[
+    ~scored.index.isin(strong_fits.index)
+    & ~scored.index.isin(secondary_fits.index)
+].head(16).copy()
 
 wildcards = scored[
     (pd.to_numeric(scored.get("Age"), errors="coerce") <= 23)
-    & (scored["criteria_matched"] >= wildcard_threshold)
-    & ~scored.index.isin(strict_matches.index)
-    & ~scored.index.isin(near_matches.index)
-].copy()
+    & ~scored.index.isin(strong_fits.index)
+    & ~scored.index.isin(secondary_fits.index)
+].head(12).copy()
 
-render_cards(strict_matches, active_criteria, active_family_names, "Strict matches", limit=12)
-render_cards(near_matches, active_criteria, active_family_names, "Near matches", limit=10)
+render_cards(strong_fits, active_criteria, active_family_names, "Strong profile fits", limit=12)
+render_cards(secondary_fits, active_criteria, active_family_names, "Secondary profile fits", limit=10)
+render_cards(top_fits, active_criteria, active_family_names, "Best remaining candidates", limit=12)
 render_cards(wildcards, active_criteria, active_family_names, "Wildcard profiles U23", limit=8)
 
 with st.expander("Full candidate table", expanded=False):
@@ -1144,6 +1166,7 @@ with st.expander("Full candidate table", expanded=False):
         "Anchor Similarity",
         "criteria_matched",
         "criteria_total",
+        "match_ratio",
         "Profile warning",
     ]
     show_cols = []
