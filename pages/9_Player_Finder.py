@@ -608,25 +608,48 @@ def render_distribution(reference: pd.DataFrame, candidates: pd.DataFrame, metri
     st.plotly_chart(fig, use_container_width=True)
 
 
+def _is_missing_scalar(value: Any) -> bool:
+    """Safe missing check: pd.isna(Series) raises ambiguous truth-value errors."""
+    if isinstance(value, (pd.Series, pd.DataFrame, np.ndarray, list, tuple, dict, set)):
+        return False
+    try:
+        return bool(pd.isna(value))
+    except Exception:
+        return False
+
+
 def render_table(df: pd.DataFrame) -> str:
+    # Duplicate column names can happen when a metric is present in multiple families.
+    # They make row[col] return a Series, so deduplicate before rendering.
+    df = df.loc[:, ~pd.Index(df.columns).duplicated()].copy()
+
     parts = ['<div class="finder-table-wrap"><table class="finder-table">']
     parts.append("<thead><tr>")
     for col in df.columns:
         parts.append(f"<th>{html.escape(str(col))}</th>")
     parts.append("</tr></thead><tbody>")
+
     for _, row in df.iterrows():
         parts.append("<tr>")
-        for col in df.columns:
-            value = row[col]
-            if pd.isna(value):
+        for col, value in zip(df.columns, row.to_list()):
+            if _is_missing_scalar(value):
                 out = "—"
+                cls = ""
             elif isinstance(value, (float, np.floating)):
-                out = f"{float(value):.1f}" if "Score" in col or "score" in col or "pct" in col.lower() else f"{float(value):.2f}"
+                out = f"{float(value):.1f}" if "Score" in str(col) or "score" in str(col) or "pct" in str(col).lower() else f"{float(value):.2f}"
+                cls = "num"
+            elif isinstance(value, (int, np.integer)):
+                out = str(int(value))
+                cls = "num"
+            elif isinstance(value, (pd.Series, np.ndarray, list, tuple, dict, set)):
+                out = str(value)
+                cls = ""
             else:
                 out = str(value)
-            cls = "num" if isinstance(value, (int, float, np.integer, np.floating)) and not pd.isna(value) else ""
+                cls = ""
             parts.append(f'<td class="{cls}">{html.escape(out)}</td>')
         parts.append("</tr>")
+
     parts.append("</tbody></table></div>")
     return "".join(parts)
 
@@ -1123,7 +1146,10 @@ with st.expander("Full candidate table", expanded=False):
         "criteria_total",
         "Profile warning",
     ]
-    show_cols = [c for c in base_cols + family_score_cols + metric_cols if c in scored.columns]
+    show_cols = []
+    for c in base_cols + family_score_cols + metric_cols:
+        if c in scored.columns and c not in show_cols:
+            show_cols.append(c)
     table = scored.head(200)[show_cols].copy()
     st.markdown(render_table(table), unsafe_allow_html=True)
 
